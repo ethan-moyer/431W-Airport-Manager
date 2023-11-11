@@ -1,18 +1,21 @@
 import sys
 from PySide6.QtWidgets import QApplication
 
-from my_widget import MyWidget
 from sign_in import UserTypeDialog, SignInDialog
+from passenger import PassengerWindow
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    widget = UserTypeDialog()
+    userTypeDialog = UserTypeDialog()
 
-    if widget.exec() == 1:
-        print(widget.mode)
+    if userTypeDialog.exec() == 1:
+        mode = userTypeDialog.mode
+        signInDialog = SignInDialog(mode)
 
-        widget2 = SignInDialog(widget.mode)
-        widget2.show()
-
-        sys.exit(app.exec())
+        if signInDialog.exec() == 1:
+            if mode >= 0:
+                passengerWindow = PassengerWindow()
+                passengerWindow.show()
+            
+            sys.exit(app.exec())
