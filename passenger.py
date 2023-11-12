@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtSql
 
 class PassengerWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -51,13 +51,47 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addStretch()
 
-        flightsVLayout.addWidget(QtWidgets.QTableView())
+        self.flightsModel = QtSql.QSqlQueryModel()
+        self.flightsView = QtWidgets.QTableView()
+        self.flightsView.setModel(self.flightsModel)
+        flightsVLayout.addWidget(self.flightsView)
 
         flightsButtonLayout = QtWidgets.QHBoxLayout()
         flightsVLayout.addLayout(flightsButtonLayout)
         flightsButtonLayout.addStretch()
         self.bookFlightsButton = QtWidgets.QPushButton("Book Flight")
-        self.bookFlightsButton.setEnabled(False)
+        self.bookFlightsButton.clicked.connect(self.openBookFlightDialog)
         flightsButtonLayout.addWidget(self.bookFlightsButton)
 
         self.resize(1120, 590)
+
+    @QtCore.Slot()
+    def openBookFlightDialog(self) -> None:
+        bookFlightDialog = BookFlightDialog()
+        if bookFlightDialog.exec():
+            print("Add booking to database")
+
+class BookFlightDialog(QtWidgets.QDialog):
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.setWindowTitle("Airport Manager - Book Flight")
+
+        self.layout = QtWidgets.QFormLayout(self)
+
+        self.seatNumComboBox = QtWidgets.QComboBox()
+        for i in range(1, 51):
+            self.seatNumComboBox.addItem(str(i))
+        self.layout.addRow("Seat:", self.seatNumComboBox)
+
+        self.bagNumComboBox = QtWidgets.QComboBox()
+        for i in range(0, 3):
+            self.bagNumComboBox.addItem(str(i))
+        self.layout.addRow("Number of bags:", self.bagNumComboBox)
+
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok, QtCore.Qt.Horizontal)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.layout.addRow(buttonBox)
+
+        self.resize(280, 100)
