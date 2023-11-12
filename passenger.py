@@ -37,6 +37,13 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
+        flightsHLayout.addWidget(QtWidgets.QLabel("Airline:"))
+        self.airlineComboBox = QtWidgets.QComboBox()
+        self.airlineComboBox.setMinimumWidth(150)
+        flightsHLayout.addWidget(self.airlineComboBox)
+
+        flightsHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
+
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
         self.destinationLineEdit.setFixedWidth(70)
@@ -45,5 +52,12 @@ class PassengerWindow(QtWidgets.QMainWindow):
         flightsHLayout.addStretch()
 
         flightsVLayout.addWidget(QtWidgets.QTableView())
+
+        flightsButtonLayout = QtWidgets.QHBoxLayout()
+        flightsVLayout.addLayout(flightsButtonLayout)
+        flightsButtonLayout.addStretch()
+        self.bookFlightsButton = QtWidgets.QPushButton("Book Flight")
+        self.bookFlightsButton.setEnabled(False)
+        flightsButtonLayout.addWidget(self.bookFlightsButton)
 
         self.resize(1120, 590)

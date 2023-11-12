@@ -1,4 +1,5 @@
 import sys
+from PySide6 import QtSql
 from PySide6.QtWidgets import QApplication
 
 from sign_in import UserTypeDialog, SignInDialog
@@ -6,6 +7,15 @@ from passenger import PassengerWindow
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # If prints out True, can connect to database
+    db = QtSql.QSqlDatabase.addDatabase("QMARIADB")
+    db.setHostName("localhost")
+    db.setDatabaseName("mysql")
+    db.setUserName("root")
+    db.setPassword("airport123")
+    ok = db.open()
+    print(ok)
 
     userTypeDialog = UserTypeDialog()
 

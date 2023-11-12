@@ -1,3 +1,6 @@
 env/
 .vscode/
 __pycache__/
+libcrypto-3-x64.dll
+libmysql.dll
+libssl-3-x64.dll
