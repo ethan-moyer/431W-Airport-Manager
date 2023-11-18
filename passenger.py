@@ -15,6 +15,7 @@ class PassengerWindow(QtWidgets.QMainWindow):
         bookingsTab = QtWidgets.QWidget()
         tabWidget.addTab(bookingsTab, "Bookings")
 
+        # Flights tab
         flightsVLayout = QtWidgets.QVBoxLayout(flightsTab)
         flightsHLayout = QtWidgets.QHBoxLayout()
         flightsVLayout.addLayout(flightsHLayout)
@@ -63,6 +64,26 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.bookFlightsButton.clicked.connect(self.openBookFlightDialog)
         flightsButtonLayout.addWidget(self.bookFlightsButton)
 
+        # Bookings tab
+        bookingsVLayout = QtWidgets.QVBoxLayout(bookingsTab)
+        
+        self.bookingsModel = QtSql.QSqlQueryModel()
+        self.bookingsView = QtWidgets.QTableView()
+        self.bookingsView.setModel(self.bookingsModel)
+        bookingsVLayout.addWidget(self.bookingsView)        
+
+        bookingsButtonLayout = QtWidgets.QHBoxLayout()
+        bookingsVLayout.addLayout(bookingsButtonLayout)
+        bookingsButtonLayout.addStretch()
+        
+        self.modifyBookingButton = QtWidgets.QPushButton("Modify Booking")
+        self.modifyBookingButton.clicked.connect(self.openModifyBookingDialog)
+        bookingsButtonLayout.addWidget(self.modifyBookingButton)
+        
+        self.removeBookingButton = QtWidgets.QPushButton("Remove Booking")
+        self.removeBookingButton.clicked.connect(self.removeBooking)
+        bookingsButtonLayout.addWidget(self.removeBookingButton)
+
         self.resize(1120, 590)
 
     @QtCore.Slot()
@@ -70,6 +91,16 @@ class PassengerWindow(QtWidgets.QMainWindow):
         bookFlightDialog = BookFlightDialog()
         if bookFlightDialog.exec():
             print("Add booking to database")
+    
+    @QtCore.Slot()
+    def openModifyBookingDialog(self) -> None:
+        modifyBookingDialog = ModifyBookingDialog()
+        if modifyBookingDialog.exec():
+            print("Modify booking in database")
+    
+    @QtCore.Slot()
+    def removeBooking(self) -> None:
+        print("Remove booking here")
 
 class BookFlightDialog(QtWidgets.QDialog):
     def __init__(self) -> None:
@@ -95,3 +126,39 @@ class BookFlightDialog(QtWidgets.QDialog):
         self.layout.addRow(buttonBox)
 
         self.resize(280, 100)
+
+class ModifyBookingDialog(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Airport Manager - Modify Booking")
+
+        self.layout = QtWidgets.QFormLayout(self)
+
+        self.seatNumComboBox = QtWidgets.QComboBox()
+        for i in range(1, 51):
+            self.seatNumComboBox.addItem(str(i))
+        self.layout.addRow("Seat:", self.seatNumComboBox)
+
+        self.layout.addRow(QtWidgets.QLabel("Bags:"))
+        self.bagsModel = QtSql.QSqlQueryModel()
+        self.bagsView = QtWidgets.QTableView()
+        self.bagsView.setModel(self.bagsModel)
+        self.layout.addRow(self.bagsView)
+
+        bagsButtonLayout = QtWidgets.QHBoxLayout()
+        self.layout.addRow(bagsButtonLayout)
+        bagsButtonLayout.addStretch()
+
+        self.addBagButton = QtWidgets.QPushButton("Add Bag")
+        bagsButtonLayout.addWidget(self.addBagButton)
+
+        self.removeBagButton = QtWidgets.QPushButton("Remove Bag")
+        bagsButtonLayout.addWidget(self.removeBagButton)
+
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok, QtCore.Qt.Horizontal)
+        buttonBox.accepted.connect(self.accept)
+        buttonBox.rejected.connect(self.reject)
+        self.layout.addRow(buttonBox)
+
+        self.resize(460, 320)
