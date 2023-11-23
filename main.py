@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 from sign_in import UserTypeDialog, SignInDialog
 from passenger import PassengerWindow
 from crew import CrewWindow
+from admin import AdminWindow
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -28,8 +29,11 @@ if __name__ == "__main__":
             if mode == 0:
                 passengerWindow = PassengerWindow()
                 passengerWindow.show()
-            else:
+            elif mode == 1:
                 crewWindow = CrewWindow()
                 crewWindow.show()
-            
+            else:
+                adminWindow = AdminWindow()
+                adminWindow.show()
+
             sys.exit(app.exec())
