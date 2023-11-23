@@ -128,7 +128,7 @@ class BookFlightDialog(QtWidgets.QDialog):
         self.resize(280, 100)
 
 class ModifyBookingDialog(QtWidgets.QDialog):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
         self.setWindowTitle("Airport Manager - Modify Booking")
