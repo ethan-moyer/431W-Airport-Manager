@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # If prints out True, can connect to database
     db = QtSql.QSqlDatabase.addDatabase("QMARIADB")
     db.setHostName("localhost")
-    db.setDatabaseName("mysql")
+    db.setDatabaseName("airport_manager")
     db.setUserName("root")
     db.setPassword("airport123")
     ok = db.open()
