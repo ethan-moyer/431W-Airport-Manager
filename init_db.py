@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, csv
 from PySide6 import QtSql
 from PySide6.QtWidgets import QApplication
 
@@ -37,14 +37,15 @@ def initDatabase():
                 dob DATE NOT NULL);")
 
     # Copy passengers info into DB
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_file_path = os.path.join(script_dir, "passengers.csv")
+    # script_dir = os.path.dirname(os.path.abspath(__file__))
+    # csv_file_path = os.path.join(script_dir, "passengers.csv")
 
-    copy_command = f"COPY Passengers(fname, lname, uname, pswd, dob) \
-                    FROM '{csv_file_path}' \
-                    DELIMITER ',' \
-                    CSV HEADER;"
-    run_query(query, copy_command)
+    # copy_command = f"COPY Passengers(fname, lname, uname, pswd, dob) \
+    #                 FROM '{csv_file_path}' \
+    #                 DELIMITER ',' \
+    #                 CSV HEADER;"
+    # run_query(query, copy_command)
+    copy_table(query, 'passengers.csv', 'Passengers')
 
     # Crew Table
     run_query(query, "CREATE TABLE Crew(\
@@ -118,6 +119,23 @@ def run_query(query, query_text):
         print(f"ERROR: {query.lastError()}")
         raise Exception("Database failure")
 
+def copy_table(query, csv_file_path, table_name):
+    with open(csv_file_path, newline='') as csvfile:
+        reader = csv.reader(csvfile)
+        headers = next(reader)
+
+        insert_query = f"INSERT INTO {table_name} ({', '.join(headers)}) VALUES ({', '.join(['?'] * len(headers))})"
+
+        for row in reader:
+            query.prepare(insert_query)
+            for i, value in enumerate(row):
+                query.bindValue(i, value)
+            if not query.exec():
+                print(f"Failed to insert row: {row}")
+                print(f"Error: {query.lastError().text()}")
+                break
+            
+            
 def view_database_info(db):
     table_query = QtSql.QSqlQuery(db)
     table_query.exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
@@ -127,8 +145,6 @@ def view_database_info(db):
         table_name = table_query.value(0)
         print(table_name)
         print_table(db, table_name)
-
-    db.close()
 
 def print_table(db, table_name):
     table_query2 = QtSql.QSqlQuery(db)
