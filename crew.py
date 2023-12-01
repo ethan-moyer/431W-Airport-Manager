@@ -138,3 +138,48 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         self.layout.addWidget(crewView)
 
         self.resize(450, 630)
+
+
+def viewWorkSchedule(self, crew_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("""SELECT p.model_name, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport
+                     FROM CrewBookings c, Planes p, Schedule s
+                     WHERE c.fid = s.fid AND s.plane_id = p.plane_id AND c.cid = ?""")
+    query.addBindValue(crew_id)
+    if not query.exec():
+        print("Error viewing work schedule:", query.lastError().text())
+    else:
+        self.scheduleModel.setQuery(query)
+
+def addToFlightSchedule(self, crew_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO CrewBookings (cid, fid) VALUES (?, ?)")
+    query.addBindValue(crew_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error adding to flight schedule:", query.lastError().text())
+
+def removeFromFlightSchedule(self, crew_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("DELETE FROM CrewBookings WHERE cid = ? AND fid = ?")
+    query.addBindValue(crew_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error removing from flight schedule:", query.lastError().text())
+
+def viewFlightDetails(self, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("""SELECT NULL AS seat_num, fname as first_name, lname as last_name
+                     FROM Crew WHERE cid IN 
+                     (SELECT cid FROM CrewBookings WHERE fid = ?)
+                     UNION ALL
+                     SELECT seat_num as seat_num, fname as first_name, lname as last_name
+                     FROM Passengers WHERE pid IN 
+                     (SELECT pid FROM Bookings WHERE fid = ?) 
+                     ORDER BY case when seat_num IS NULL then 0 else 1 end, seat_num;""")
+    query.addBindValue(flight_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error viewing flight details:", query.lastError().text())
+    else:
+        self.detailsModel.setQuery(query)

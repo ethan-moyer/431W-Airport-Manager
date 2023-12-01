@@ -162,3 +162,143 @@ class ModifyBookingDialog(QtWidgets.QDialog):
         self.layout.addRow(buttonBox)
 
         self.resize(460, 320)
+
+
+def addBooking(self, passenger_id, flight_id, seat_num):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    query.addBindValue(seat_num)
+    if not query.exec():
+        print("Error adding booking:", query.lastError().text())
+
+def removeBooking(self, passenger_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("DELETE FROM Bookings WHERE pid = ? AND fid = ?")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error removing booking:", query.lastError().text())
+
+def changeFlight(self, passenger_id, old_flight_id, new_flight_id, new_seat_num):
+    query = QtSql.QSqlQuery()
+    query.exec("BEGIN;")
+
+    # Check flight capacity
+    query.prepare("""SELECT m.capacity 
+                     FROM Models m 
+                     JOIN Planes p ON m.model_name = p.model_name 
+                     JOIN Schedule s ON p.plane_id = s.plane_id 
+                     WHERE s.fid = ?""")
+    query.addBindValue(new_flight_id)
+    if not query.exec():
+        print("Error checking flight capacity:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    if query.next():
+        flight_capacity = query.value(0)
+    else:
+        print("Flight not found.")
+        query.exec("ROLLBACK;")
+        return
+
+    # Check current bookings
+    query.prepare("SELECT COUNT(*) FROM Bookings WHERE fid = ?")
+    query.addBindValue(new_flight_id)
+    if not query.exec():
+        print("Error checking current bookings:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    if query.next():
+        current_bookings = query.value(0)
+    else:
+        print("No bookings found.")
+        query.exec("ROLLBACK;")
+        return
+
+    if current_bookings >= flight_capacity:
+        print("Error: Adding to new flight exceeds capacity.")
+        query.exec("ROLLBACK;")
+        return
+
+    # Delete from old flight
+    query.prepare("DELETE FROM Bookings WHERE pid = ? AND fid = ?")
+    query.addBindValue(passenger_id)
+    query.addBindValue(old_flight_id)
+    if not query.exec():
+        print("Error deleting from old flight:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    # Insert into new flight
+    query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
+    query.addBindValue(passenger_id)
+    query.addBindValue(new_flight_id)
+    query.addBindValue(new_seat_num)
+    if not query.exec():
+        print("Error inserting into new flight:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    # Update bags
+    query.prepare("UPDATE Bags SET fid = ? WHERE pid = ? AND fid = ?")
+    query.addBindValue(new_flight_id)
+    query.addBindValue(passenger_id)
+    query.addBindValue(old_flight_id)
+    if not query.exec():
+        print("Error updating baggage details:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    query.exec("COMMIT;")
+    print("Flight changed successfully")
+    
+
+def changeSeat(self, passenger_id, flight_id, new_seat_num):
+    query = QtSql.QSqlQuery()
+    query.exec("BEGIN;")
+
+    # Check if new seat is available
+    query.prepare("SELECT 1 FROM Bookings WHERE fid = ? AND seat_num = ?")
+    query.addBindValue(flight_id)
+    query.addBindValue(new_seat_num)
+    if not query.exec():
+        print("Error checking seat availability:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    if query.next():
+        print("Seat not available")
+        query.exec("ROLLBACK;")
+        return
+
+    # Update seat number
+    query.prepare("UPDATE Bookings SET seat_num = ? WHERE pid = ? AND fid = ?")
+    query.addBindValue(new_seat_num)
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error changing seat:", query.lastError().text())
+        query.exec("ROLLBACK;")
+        return
+
+    query.exec("COMMIT;")
+    print("Seat changed successfully")
+
+def addBag(self, passenger_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO Bags (pid, fid) VALUES (?, ?)")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error adding bag:", query.lastError().text())
+
+def removeBag(self, bag_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("DELETE FROM Bags WHERE bid = ?")
+    query.addBindValue(bag_id)
+    if not query.exec():
+        print("Error removing bag:", query.lastError().text())

@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication
 def initDatabase():
     app = QApplication(sys.argv)
     
-    db = QtSql.QSqlDatabase.addDatabase("QMARIADB")
+    db = QtSql.QSqlDatabase.addDatabase("QPSQL")
     db.setHostName("localhost")
     db.setDatabaseName("sys")
     db.setUserName("root")
@@ -15,100 +15,110 @@ def initDatabase():
     assert(ok)
 
     query = QtSql.QSqlQuery(db)
+    # query.exec("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
+    # tables = []
+    # while query.next():
+    #     table_name = query.value(0)
+    #     tables.append(table_name)
 
-    # Remove existing data
-    query.exec("DROP DATABASE IF EXISTS airport_manager;")
+    tables = ["Passengers", "Crew", "Airlines", "Models", "Planes", "Schedule", "Bags", "Bookings", "CrewBookings"]
 
-    # Create and switch to new database
-    query.exec("CREATE DATABASE airport_manager;")
-    query.exec("USE airport_manager;")
+    for table in tables:
+        sql_command = f"DROP TABLE IF EXISTS {table} CASCADE;"
+        run_query(query, sql_command)  
+
+    print("DATABASE CLEARED")
 
     # Create tables
-    query.exec("CREATE TABLE Passengers(\
-                pid INT AUTO_INCREMENT,\
+    # Passengers Table
+    run_query(query, "CREATE TABLE Passengers(\
+                pid SERIAL PRIMARY KEY,\
+                fname VARCHAR(31) NOT NULL,\
+                lname VARCHAR(31) NOT NULL,\
+                dob DATE NOT NULL);")
+
+    # Crew Table
+    run_query(query, "CREATE TABLE Crew(\
+                cid SERIAL PRIMARY KEY,\
                 fname VARCHAR(31) NOT NULL,\
                 lname VARCHAR(31) NOT NULL,\
                 dob DATE NOT NULL,\
-                PRIMARY KEY (pid));")
+                position VARCHAR(31) NOT NULL);")
 
-    query.exec("CREATE TABLE Crew(\
-                cid INT AUTO_INCREMENT,\
-                fname VARCHAR(31) NOT NULL,\
-                lname VARCHAR(31) NOT NULL,\
-                dob DATE NOT NULL,\
-                position VARCHAR(31) NOT NULL,\
-                PRIMARY KEY (cid)\
-                );")
+    # Airlines Table
+    run_query(query, "CREATE TABLE Airlines(\
+                aid SERIAL PRIMARY KEY,\
+                name VARCHAR(31) NOT NULL);")
 
-    query.exec("CREATE TABLE Airlines(\
-                aid INT AUTO_INCREMENT,\
-                name VARCHAR(31) NOT NULL,\
-                PRIMARY KEY (aid)\
-                );")
+    # Models Table
+    run_query(query, "CREATE TABLE Models(\
+                model_name VARCHAR(31) PRIMARY KEY,\
+                capacity INT NOT NULL);")
 
-    query.exec("CREATE TABLE Models(\
-                model_name VARCHAR(31) NOT NULL,\
-                capacity INT NOT NULL,\
-                PRIMARY KEY (model_name)\
-                );")
+    # Planes Table
+    run_query(query, "CREATE TABLE Planes(\
+                plane_id SERIAL PRIMARY KEY,\
+                model_name VARCHAR(31) NOT NULL REFERENCES Models(model_name) ON UPDATE CASCADE ON DELETE CASCADE,\
+                aid INT REFERENCES Airlines(aid) ON UPDATE CASCADE ON DELETE SET NULL);")
 
-    query.exec("CREATE TABLE Planes(\
-                plane_id INT AUTO_INCREMENT,\
-                model_name VARCHAR(31) NOT NULL,\
-                aid INT,\
-                PRIMARY KEY (plane_id),\
-                FOREIGN KEY (model_name) REFERENCES Models(model_name)\
-                ON UPDATE CASCADE ON DELETE CASCADE,\
-                FOREIGN KEY (aid) REFERENCES Airlines(aid)\
-                ON UPDATE CASCADE ON DELETE SET NULL\
-                );")
-
-    query.exec("CREATE TABLE Schedule(\
-                fid INT AUTO_INCREMENT,\
-                plane_id INT NOT NULL,\
+    # Schedule Table
+    run_query(query, "CREATE TABLE Schedule(\
+                fid SERIAL PRIMARY KEY,\
+                plane_id INT NOT NULL REFERENCES Planes(plane_id) ON UPDATE CASCADE ON DELETE CASCADE,\
                 dep_term VARCHAR(3) NOT NULL,\
-                dep_time DATETIME NOT NULL,\
+                dep_time TIMESTAMP NOT NULL,\
                 arr_term VARCHAR(3) NOT NULL,\
-                arr_time DATETIME NOT NULL,\
-                dest_airport VARCHAR(3) NOT NULL,\
-                PRIMARY KEY (fid),\
-                FOREIGN KEY (plane_id) REFERENCES Planes(plane_id)\
-                ON UPDATE CASCADE ON DELETE CASCADE\
-                );")
+                arr_time TIMESTAMP NOT NULL,\
+                dest_airport VARCHAR(3) NOT NULL);")
 
-    query.exec("CREATE TABLE Bags(\
-                bid INT AUTO_INCREMENT,\
-                pid INT NOT NULL,\
-                fid INT NOT NULL,\
-                PRIMARY KEY (bid),\
-                FOREIGN KEY (pid) REFERENCES Passengers(pid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE,\
-                FOREIGN KEY (fid) REFERENCES Schedule(fid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE)")
-    
-    query.exec("CREATE TABLE Bookings(\
+    # Bags Table
+    run_query(query, "CREATE TABLE Bags(\
+                bid SERIAL PRIMARY KEY,\
+                pid INT NOT NULL REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
+                fid INT NOT NULL REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
+
+    # Bookings Table
+    run_query(query, "CREATE TABLE Bookings(\
                 pid INT NOT NULL,\
                 fid INT NOT NULL,\
                 seat_num INT NOT NULL,\
                 PRIMARY KEY (pid, fid),\
-                FOREIGN KEY (pid) REFERENCES Passengers(pid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE,\
-                FOREIGN KEY (fid) REFERENCES Schedule(fid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE,\
-                UNIQUE (fid, seat_num))")
+                FOREIGN KEY (pid) REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
+                FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE,\
+                UNIQUE (fid, seat_num));")
 
-    query.exec("CREATE TABLE CrewBookings(\
+    # CrewBookings Table
+    run_query(query, "CREATE TABLE CrewBookings(\
                 cid INT NOT NULL,\
                 fid INT NOT NULL,\
                 PRIMARY KEY (cid, fid),\
-                FOREIGN KEY (cid) REFERENCES Crew(cid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE,\
-                FOREIGN KEY (fid) REFERENCES Schedule(fid)\
-                ON UPDATE RESTRICT ON DELETE CASCADE\
-                );")
+                FOREIGN KEY (cid) REFERENCES Crew(cid) ON UPDATE RESTRICT ON DELETE CASCADE,\
+                FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
+
+    print("ALL QUERIES RAN SUCCESSFULLY.")
+    view_database_info(db)
 
     db.close()
     QtSql.QSqlDatabase.removeDatabase("sys")
+
+def run_query(query, query_text):
+    result = query.exec(query_text)
+    if not result:
+        print(f"FAILED TO RUN \n{query_text}\n\n")
+        print(f"ERROR: {query.lastError()}")
+        raise Exception("Database failure")
+
+def view_database_info(db):
+    table_query = QtSql.QSqlQuery(db)
+    table_query.exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
+    
+    print("Tables in the database:")
+    while table_query.next():
+        table_name = table_query.value(0)
+        print(table_name)
+        
+
+    db.close()
 
 if __name__ == "__main__":
     initDatabase()

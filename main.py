@@ -10,14 +10,19 @@ from admin import AdminWindow
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # If prints out True, can connect to database
-    db = QtSql.QSqlDatabase.addDatabase("QMARIADB")
+    db = QtSql.QSqlDatabase.addDatabase("QPSQL")
     db.setHostName("localhost")
-    db.setDatabaseName("airport_manager")
+    db.setDatabaseName("sys")
     db.setUserName("root")
     db.setPassword("airport123")
     ok = db.open()
-    print(ok)
+
+    if not ok:
+        print("NOT ABLE TO LOAD DATABASE:")
+        print(f"Last error: {db.lastError().text()}")
+        print(f"{QtSql.QSqlDatabase.drivers()=}")
+        raise Exception("Couldn't load database")
+        
 
     userTypeDialog = UserTypeDialog()
 

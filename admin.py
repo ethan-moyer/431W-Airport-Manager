@@ -449,3 +449,114 @@ class AddCrewBookingDialog(QtWidgets.QDialog):
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
         self.layout.addRow(buttonBox)
+
+
+def addPassengerToFlight(self, passenger_id, flight_id, seat_num):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    query.addBindValue(seat_num)
+    if not query.exec():
+        print("Error adding passenger to flight:", query.lastError().text())
+
+def removePassengerFromFlight(self, passenger_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("DELETE FROM Bookings WHERE pid = ? AND fid = ?")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error removing passenger from flight:", query.lastError().text())
+
+def changeSeatOnFlight(self, passenger_id, flight_id, new_seat_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("UPDATE Bookings SET seat_num = ? WHERE pid = ? AND fid = ?")
+    query.addBindValue(new_seat_id)
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error changing seat:", query.lastError().text())
+
+def addBag(self, passenger_id, flight_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO Bags (pid, fid) VALUES (?, ?)")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error adding bag:", query.lastError().text())
+
+def removeBag(self, bag_id):
+    query = QtSql.QSqlQuery()
+    query.prepare("DELETE FROM Bags WHERE bid = ?")
+    query.addBindValue(bag_id)
+    if not query.exec():
+        print("Error removing bag:", query.lastError().text())
+
+def viewCrewSchedules(self):
+    query = QtSql.QSqlQuery()
+    query.prepare("""SELECT c.fname, c.lname, c.cid, p.model_name, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport
+                     FROM Crew c, CrewBookings cb, Schedule s, Plane p
+                     WHERE c.cid = cb.cid AND cb.fid = s.fid AND s.plane_id = p.plane_id""")
+    if not query.exec():
+        print("Error viewing crew schedules:", query.lastError().text())
+    else:
+        # NEED TO FIGURE OUT HOW TO DISPLAY
+        self.crewSchedulesModel.setQuery(query)
+
+def addNewCrewMember(self, first_name, last_name, date_of_birth, role):
+    query = QtSql.QSqlQuery()
+    query.prepare("INSERT INTO Crew (fname, lname, dob, position) VALUES (?, ?, ?, ?)")
+    query.addBindValue(first_name)
+    query.addBindValue(last_name)
+    query.addBindValue(date_of_birth)
+    query.addBindValue(role)
+    if not query.exec():
+        print("Error adding new crew member:", query.lastError().text())
+
+def modifyCrewSchedule(self, crew_id, flight_id, add=True):
+    query = QtSql.QSqlQuery()
+    if add:
+        query.prepare("INSERT INTO CrewBookings (cid, fid) VALUES (?, ?)")
+    else:
+        query.prepare("DELETE FROM CrewBookings WHERE cid = ? AND fid = ?")
+    query.addBindValue(crew_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        action = "adding" if add else "removing"
+        print(f"Error {action} crew member's schedule:", query.lastError().text())
+
+def modifyFlight(self, plane_id, dep_term, dep_time, arr_term, arr_time, dest_airport, flight_id=None):
+    query = QtSql.QSqlQuery()
+    if flight_id:  # Modify existing flight
+        query.prepare("UPDATE Schedule SET plane_id = ?, dep_term = ?, dep_time = ?, arr_term = ?, arr_time = ?, dest_airport = ? WHERE fid = ?")
+        query.addBindValue(plane_id)
+        query.addBindValue(dep_term)
+        query.addBindValue(dep_time)
+        query.addBindValue(arr_term)
+        query.addBindValue(arr_time)
+        query.addBindValue(dest_airport)
+        query.addBindValue(flight_id)
+    else:  # Add new flight
+        query.prepare("INSERT INTO Schedule (plane_id, dep_term, dep_time, arr_term, arr_time, dest_airport) VALUES (?, ?, ?, ?, ?, ?)")
+        query.addBindValue(plane_id)
+        query.addBindValue(dep_term)
+        query.addBindValue(dep_time)
+        query.addBindValue(arr_term)
+        query.addBindValue(arr_time)
+        query.addBindValue(dest_airport)
+    if not query.exec():
+        action = "modifying" if flight_id else "adding"
+        print(f"Error {action} flight:", query.lastError().text())
+
+def getPassengersByAirlineAndDate(self, airline_name, date):
+    query = QtSql.QSqlQuery()
+    query.prepare("""SELECT fname, lname, pid
+                     FROM Passengers NATURAL JOIN Bookings NATURAL JOIN Schedule NATURAL JOIN Planes NATURAL JOIN Airlines a
+                     WHERE a.name = ? AND CAST(dep_time AS DATE) = ?""")
+    query.addBindValue(airline_name)
+    query.addBindValue(date)
+    if not query.exec():
+        print("Error retrieving passengers:", query.lastError().text())
+    else:
+        # NEED TO FIGURE OUT HOW TO DISPLAY
+        self.passengersModel.setQuery(query)
