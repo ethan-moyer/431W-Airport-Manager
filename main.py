@@ -12,8 +12,8 @@ if __name__ == "__main__":
 
     db = QtSql.QSqlDatabase.addDatabase("QPSQL")
     db.setHostName("localhost")
-    db.setDatabaseName("sys")
-    db.setUserName("root")
+    db.setDatabaseName("airport_manager")
+    db.setUserName("postgres")
     db.setPassword("airport123")
     ok = db.open()
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         print(f"Last error: {db.lastError().text()}")
         print(f"{QtSql.QSqlDatabase.drivers()=}")
         raise Exception("Couldn't load database")
-        
+
 
     userTypeDialog = UserTypeDialog()
 
