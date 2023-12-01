@@ -128,4 +128,6 @@ class SignInDialog(QtWidgets.QDialog):
     @QtCore.Slot()
     def createAccountButtonClicked(self) -> None:
         print("Create account here")
+        print(self.lastNameLineEdit.text())
+        print(dir(self.lastNameLineEdit))
         self.accept()

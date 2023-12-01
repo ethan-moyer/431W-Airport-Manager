@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from PySide6 import QtSql
 from PySide6.QtWidgets import QApplication
 
@@ -11,8 +11,6 @@ def initDatabase():
     db.setUserName("postgres")
     db.setPassword("airport123")
     ok = db.open()
-
-    assert(ok)
 
     query = QtSql.QSqlQuery(db)
 
@@ -34,7 +32,19 @@ def initDatabase():
                 pid SERIAL PRIMARY KEY,\
                 fname VARCHAR(31) NOT NULL,\
                 lname VARCHAR(31) NOT NULL,\
+                uname VARCHAR(31) UNIQUE NOT NULL, \
+                pswd VARCHAR(31) NOT NULL, \
                 dob DATE NOT NULL);")
+
+    # Copy passengers info into DB
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_file_path = os.path.join(script_dir, "passengers.csv")
+
+    copy_command = f"COPY Passengers(fname, lname, uname, pswd, dob) \
+                    FROM '{csv_file_path}' \
+                    DELIMITER ',' \
+                    CSV HEADER;"
+    run_query(query, copy_command)
 
     # Crew Table
     run_query(query, "CREATE TABLE Crew(\
@@ -94,6 +104,7 @@ def initDatabase():
                 FOREIGN KEY (cid) REFERENCES Crew(cid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
 
+
     print("ALL QUERIES RAN SUCCESSFULLY.")
     view_database_info(db)
 
@@ -115,8 +126,18 @@ def view_database_info(db):
     while table_query.next():
         table_name = table_query.value(0)
         print(table_name)
+        print_table(db, table_name)
 
     db.close()
+
+def print_table(db, table_name):
+    table_query2 = QtSql.QSqlQuery(db)
+
+    table_query2.exec(f"SELECT * FROM {table_name}")
+    # Iterate over the rows and print them
+    while table_query2.next():
+        row_values = [table_query2.value(i) for i in range(table_query2.record().count())]
+        print(row_values)
 
 if __name__ == "__main__":
     initDatabase()

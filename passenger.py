@@ -91,6 +91,7 @@ class PassengerWindow(QtWidgets.QMainWindow):
         bookFlightDialog = BookFlightDialog()
         if bookFlightDialog.exec():
             print("Add booking to database")
+            addBooking()
     
     @QtCore.Slot()
     def openModifyBookingDialog(self) -> None:
