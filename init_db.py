@@ -4,28 +4,27 @@ from PySide6.QtWidgets import QApplication
 
 def initDatabase():
     app = QApplication(sys.argv)
-    
+
     db = QtSql.QSqlDatabase.addDatabase("QPSQL")
     db.setHostName("localhost")
-    db.setDatabaseName("sys")
-    db.setUserName("root")
+    db.setDatabaseName("postgres")
+    db.setUserName("postgres")
     db.setPassword("airport123")
     ok = db.open()
 
     assert(ok)
 
     query = QtSql.QSqlQuery(db)
-    # query.exec("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';")
-    # tables = []
-    # while query.next():
-    #     table_name = query.value(0)
-    #     tables.append(table_name)
 
-    tables = ["Passengers", "Crew", "Airlines", "Models", "Planes", "Schedule", "Bags", "Bookings", "CrewBookings"]
+    run_query(query, "DROP DATABASE IF EXISTS airport_manager;")
+    run_query(query, "CREATE DATABASE airport_manager;")
 
-    for table in tables:
-        sql_command = f"DROP TABLE IF EXISTS {table} CASCADE;"
-        run_query(query, sql_command)  
+    db.close()
+    QtSql.QSqlDatabase.removeDatabase("postgres")
+
+    db.setDatabaseName("airport_manager")
+    db.open()
+    assert ok
 
     print("DATABASE CLEARED")
 
@@ -99,7 +98,7 @@ def initDatabase():
     view_database_info(db)
 
     db.close()
-    QtSql.QSqlDatabase.removeDatabase("sys")
+    QtSql.QSqlDatabase.removeDatabase("airport_manager")
 
 def run_query(query, query_text):
     result = query.exec(query_text)
@@ -111,12 +110,11 @@ def run_query(query, query_text):
 def view_database_info(db):
     table_query = QtSql.QSqlQuery(db)
     table_query.exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-    
+
     print("Tables in the database:")
     while table_query.next():
         table_name = table_query.value(0)
         print(table_name)
-        
 
     db.close()
 
