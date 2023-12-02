@@ -358,6 +358,9 @@ class AddFlightDialog(QtWidgets.QDialog):
         self.depDateTimeEdit = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
         self.layout.addRow("Departure Time:", self.depDateTimeEdit)
 
+        self.arrTermLineEdit = QtWidgets.QLineEdit()
+        self.layout.addRow("Arrival Terminal:", self.arrTermLineEdit)
+
         self.arrDateTimeEdit = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
         self.layout.addRow("Arrival Time:", self.arrDateTimeEdit)
 
