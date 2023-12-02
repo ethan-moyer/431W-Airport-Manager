@@ -1,8 +1,9 @@
 from PySide6 import QtCore, QtWidgets, QtSql
 
 class PassengerWindow(QtWidgets.QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, passenger_id) -> None:
         super().__init__()
+        self.passenger_id = passenger_id
 
         self.setWindowTitle("Airport Manager")
 
@@ -55,6 +56,11 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.flightsModel = QtSql.QSqlQueryModel()
         self.flightsView = QtWidgets.QTableView()
         self.flightsView.setModel(self.flightsModel)
+        
+        # Select rows instead of cells
+        self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
         flightsVLayout.addWidget(self.flightsView)
 
         flightsButtonLayout = QtWidgets.QHBoxLayout()
@@ -70,6 +76,11 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.bookingsModel = QtSql.QSqlQueryModel()
         self.bookingsView = QtWidgets.QTableView()
         self.bookingsView.setModel(self.bookingsModel)
+        
+        # Select rows instead of cells
+        self.bookingsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.bookingsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+
         bookingsVLayout.addWidget(self.bookingsView)        
 
         bookingsButtonLayout = QtWidgets.QHBoxLayout()
@@ -86,25 +97,125 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         self.resize(1120, 590)
 
+        self.airlineComboBox.currentIndexChanged.connect(self.updateFlightsView)
+        self.fromDateEdit.dateChanged.connect(self.updateFlightsView)
+        self.toDateEdit.dateChanged.connect(self.updateFlightsView)
+        self.fromCheckBox.stateChanged.connect(self.updateFlightsView)
+        self.toCheckBox.stateChanged.connect(self.updateFlightsView)
+        self.destinationLineEdit.textChanged.connect(self.updateFlightsView)
+
+        self.updateFlightsView()
+        self.updateBookingsView()
+        self.loadAirlinesIntoComboBox()
+
+    def updateFlightsView(self):
+        # Base query
+        queryStr = "SELECT * FROM Schedule WHERE 1=1"
+        params = {}
+
+        # Filter by airline if selected
+        airline = self.airlineComboBox.currentText()
+        if airline:
+            queryStr += " AND EXISTS (SELECT 1 FROM Planes p JOIN Airlines a ON p.aid = a.aid WHERE a.name = :airline AND p.plane_id = Schedule.plane_id)"
+            params[':airline'] = airline
+
+        # Filter by date range if checked
+        if self.fromCheckBox.isChecked():
+            fromDate = self.fromDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dep_time >= :fromDate"
+            params[':fromDate'] = fromDate
+        if self.toCheckBox.isChecked():
+            toDate = self.toDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dep_time <= :toDate"
+            params[':toDate'] = toDate
+
+        # Filter by destination if entered
+        destination = self.destinationLineEdit.text().strip()
+        if destination:
+            queryStr += " AND dest_airport = :destination"
+            params[':destination'] = destination
+
+        # Prepare and execute the query with bound parameters
+        query = QtSql.QSqlQuery()
+        query.prepare(queryStr)
+        for key, value in params.items():
+            query.bindValue(key, value)
+        query.exec_()
+
+        # Set the query for the model
+        self.flightsModel.setQuery(query)
+        self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+
+
+    def updateBookingsView(self):
+        queryStr = "SELECT * FROM Bookings WHERE pid = ?"
+        query = QtSql.QSqlQuery()
+        query.prepare(queryStr)
+        query.addBindValue(self.passenger_id)
+        query.exec_()
+
+        self.bookingsModel.setQuery(query)
+        self.bookingsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+
+    def loadAirlinesIntoComboBox(self):
+        # Load airlines into the combobox
+        query = QtSql.QSqlQuery("SELECT name FROM Airlines")
+        while query.next():
+            self.airlineComboBox.addItem(query.value(0))
+
     @QtCore.Slot()
     def openBookFlightDialog(self) -> None:
-        bookFlightDialog = BookFlightDialog()
+        selectedFlightIndex = self.flightsView.currentIndex()
+        if not selectedFlightIndex.isValid():
+            QtWidgets.QMessageBox.warning(self, "Selection Error", "Please select a flight to book.")
+            return
+
+        flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
+        passenger_id = self.passenger_id
+        bookFlightDialog = BookFlightDialog(flight_id)
         if bookFlightDialog.exec():
-            print("Add booking to database")
-            addBooking()
+            seat_num = bookFlightDialog.seatNumComboBox.currentText()
+            num_bags = bookFlightDialog.bagNumComboBox.currentText()
+
+            addBooking(passenger_id, flight_id, seat_num, num_bags)
+        self.updateBookingsView()
     
     @QtCore.Slot()
     def openModifyBookingDialog(self) -> None:
-        modifyBookingDialog = ModifyBookingDialog()
+        selectedBookingIndex = self.bookingsView.currentIndex()
+        if not selectedBookingIndex.isValid():
+            QtWidgets.QMessageBox.warning(self, "Selection Error", "Please select a booking to modify.")
+            return
+
+        bookingRecord = self.bookingsModel.record(selectedBookingIndex.row())
+        passenger_id = bookingRecord.value("pid")
+        flight_id = bookingRecord.value("fid")
+        old_seat_num = bookingRecord.value("seat_num")
+        
+        modifyBookingDialog = ModifyBookingDialog(passenger_id, flight_id, old_seat_num)
         if modifyBookingDialog.exec():
-            print("Modify booking in database")
+            new_seat_num = modifyBookingDialog.seatNumComboBox.currentText()
+            if str(new_seat_num) != str(old_seat_num):
+                changeSeat(passenger_id, flight_id, new_seat_num)
+        self.updateBookingsView()
     
     @QtCore.Slot()
     def removeBooking(self) -> None:
-        print("Remove booking here")
+        selectedBookingIndex = self.bookingsView.currentIndex()
+        if not selectedBookingIndex.isValid():
+            QtWidgets.QMessageBox.warning(self, "Selection Error", "Please select a booking to remove.")
+            return
+
+        bookingRecord = self.bookingsModel.record(selectedBookingIndex.row())
+        passenger_id = bookingRecord.value("pid")
+        flight_id = bookingRecord.value("fid")
+        removeBooking(passenger_id, flight_id)
+        self.updateBookingsView()
 
 class BookFlightDialog(QtWidgets.QDialog):
-    def __init__(self) -> None:
+    def __init__(self, flight_id) -> None:
         super().__init__()
 
         self.setWindowTitle("Airport Manager - Book Flight")
@@ -112,8 +223,13 @@ class BookFlightDialog(QtWidgets.QDialog):
         self.layout = QtWidgets.QFormLayout(self)
 
         self.seatNumComboBox = QtWidgets.QComboBox()
-        for i in range(1, 51):
-            self.seatNumComboBox.addItem(str(i))
+
+        availableSeats = getAvailableSeats(flight_id)
+
+        # Populate the combo box with available seats
+        for seat in availableSeats:
+            self.seatNumComboBox.addItem(str(seat))
+            
         self.layout.addRow("Seat:", self.seatNumComboBox)
 
         self.bagNumComboBox = QtWidgets.QComboBox()
@@ -129,22 +245,34 @@ class BookFlightDialog(QtWidgets.QDialog):
         self.resize(280, 100)
 
 class ModifyBookingDialog(QtWidgets.QDialog):
-    def __init__(self) -> None:
+    def __init__(self, passenger_id, flight_id, seat_num) -> None:
         super().__init__()
+        self.passenger_id, self.flight_id = passenger_id, flight_id
 
         self.setWindowTitle("Airport Manager - Modify Booking")
 
         self.layout = QtWidgets.QFormLayout(self)
 
         self.seatNumComboBox = QtWidgets.QComboBox()
-        for i in range(1, 51):
-            self.seatNumComboBox.addItem(str(i))
+        availableSeats = getAvailableSeats(self.flight_id, seat_num)
+        for seat in availableSeats:
+            self.seatNumComboBox.addItem(str(seat))
+        if int(seat_num) in availableSeats:
+            self.seatNumComboBox.setCurrentIndex(availableSeats.index(int(seat_num)))
+        else:
+            self.seatNumComboBox.setCurrentIndex(0)
+
         self.layout.addRow("Seat:", self.seatNumComboBox)
 
         self.layout.addRow(QtWidgets.QLabel("Bags:"))
         self.bagsModel = QtSql.QSqlQueryModel()
         self.bagsView = QtWidgets.QTableView()
         self.bagsView.setModel(self.bagsModel)
+
+        # Select rows instead of cells
+        self.bagsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.bagsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
         self.layout.addRow(self.bagsView)
 
         bagsButtonLayout = QtWidgets.QHBoxLayout()
@@ -152,10 +280,15 @@ class ModifyBookingDialog(QtWidgets.QDialog):
         bagsButtonLayout.addStretch()
 
         self.addBagButton = QtWidgets.QPushButton("Add Bag")
+        self.addBagButton.clicked.connect(self.onAddBag)
         bagsButtonLayout.addWidget(self.addBagButton)
-
+        
         self.removeBagButton = QtWidgets.QPushButton("Remove Bag")
+        self.removeBagButton.clicked.connect(self.onRemoveBag)
         bagsButtonLayout.addWidget(self.removeBagButton)
+
+        self.updateBagsTable()
+
 
         buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok, QtCore.Qt.Horizontal)
         buttonBox.accepted.connect(self.accept)
@@ -164,101 +297,93 @@ class ModifyBookingDialog(QtWidgets.QDialog):
 
         self.resize(460, 320)
 
+    def updateBagsTable(self):
+        query = QtSql.QSqlQuery()
+        query.prepare("SELECT bid, pid, fid FROM Bags WHERE pid = :pid AND fid = :fid")
+        query.bindValue(":pid", self.passenger_id)
+        query.bindValue(":fid", self.flight_id)
+        if not query.exec_():
+            print("ERROR", query.lastError().text())
+            return
 
-def addBooking(self, passenger_id, flight_id, seat_num):
+        self.bagsModel.setQuery(query)
+        self.bagsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+        if self.bagsModel.rowCount() >= 2:
+            self.addBagButton.setDisabled(True)
+        else:
+            self.addBagButton.setEnabled(True)
+
+    def onAddBag(self):
+        addBag(self.passenger_id, self.flight_id)
+        self.updateBagsTable()
+
+    def onRemoveBag(self):
+        selectedBagIndex = self.bagsView.currentIndex()
+        if not selectedBagIndex.isValid():
+            QtWidgets.QMessageBox.warning(self, "Selection Error", "Please select a bag to remove.")
+            return
+
+        bagRecord = self.bagsModel.record(selectedBagIndex.row())
+        bag_id = bagRecord.value("bid")
+        removeBag(bag_id)
+        self.updateBagsTable()
+
+# TABLE MODIFICATION QUERIES
+
+def addBooking(passenger_id, flight_id, seat_num, num_bags):
     query = QtSql.QSqlQuery()
+    query.exec("BEGIN;")  # Start transaction
+
+    # Add the booking
     query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     query.addBindValue(seat_num)
     if not query.exec():
         print("Error adding booking:", query.lastError().text())
+        query.exec("ROLLBACK;")  # Rollback if error occurs
+        return
 
-def removeBooking(self, passenger_id, flight_id):
+    # Add bags
+    for _ in range(int(num_bags)):
+        query.prepare("INSERT INTO Bags (pid, fid) VALUES (?, ?)")
+        query.addBindValue(passenger_id)
+        query.addBindValue(flight_id)
+        if not query.exec():
+            print("Error adding bag:", query.lastError().text())
+            query.exec("ROLLBACK;")  # Rollback if error occurs
+            return
+
+    query.exec("COMMIT;")  # Commit the transaction
+    print(f"Successfully added booking and bags, {passenger_id=} {flight_id=} {seat_num=} {num_bags=}")
+
+def removeBooking(passenger_id, flight_id):
     query = QtSql.QSqlQuery()
+    query.exec("BEGIN;")  # Start transaction
+
+    # Delete bags associated with the booking
+    query.prepare("DELETE FROM Bags WHERE pid = ? AND fid = ?")
+    query.addBindValue(passenger_id)
+    query.addBindValue(flight_id)
+    if not query.exec():
+        print("Error removing bags:", query.lastError().text())
+        query.exec("ROLLBACK;")  # Rollback if error occurs
+        return
+
+    # Delete the booking
     query.prepare("DELETE FROM Bookings WHERE pid = ? AND fid = ?")
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
         print("Error removing booking:", query.lastError().text())
-
-def changeFlight(self, passenger_id, old_flight_id, new_flight_id, new_seat_num):
-    query = QtSql.QSqlQuery()
-    query.exec("BEGIN;")
-
-    # Check flight capacity
-    query.prepare("""SELECT m.capacity 
-                     FROM Models m 
-                     JOIN Planes p ON m.model_name = p.model_name 
-                     JOIN Schedule s ON p.plane_id = s.plane_id 
-                     WHERE s.fid = ?""")
-    query.addBindValue(new_flight_id)
-    if not query.exec():
-        print("Error checking flight capacity:", query.lastError().text())
-        query.exec("ROLLBACK;")
+        query.exec("ROLLBACK;")  # Rollback if error occurs
         return
 
-    if query.next():
-        flight_capacity = query.value(0)
-    else:
-        print("Flight not found.")
-        query.exec("ROLLBACK;")
-        return
+    query.exec("COMMIT;")  # Commit the transaction
+    print(f"Successfully removed booking and associated bags, {passenger_id=} {flight_id=}")
 
-    # Check current bookings
-    query.prepare("SELECT COUNT(*) FROM Bookings WHERE fid = ?")
-    query.addBindValue(new_flight_id)
-    if not query.exec():
-        print("Error checking current bookings:", query.lastError().text())
-        query.exec("ROLLBACK;")
-        return
 
-    if query.next():
-        current_bookings = query.value(0)
-    else:
-        print("No bookings found.")
-        query.exec("ROLLBACK;")
-        return
-
-    if current_bookings >= flight_capacity:
-        print("Error: Adding to new flight exceeds capacity.")
-        query.exec("ROLLBACK;")
-        return
-
-    # Delete from old flight
-    query.prepare("DELETE FROM Bookings WHERE pid = ? AND fid = ?")
-    query.addBindValue(passenger_id)
-    query.addBindValue(old_flight_id)
-    if not query.exec():
-        print("Error deleting from old flight:", query.lastError().text())
-        query.exec("ROLLBACK;")
-        return
-
-    # Insert into new flight
-    query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
-    query.addBindValue(passenger_id)
-    query.addBindValue(new_flight_id)
-    query.addBindValue(new_seat_num)
-    if not query.exec():
-        print("Error inserting into new flight:", query.lastError().text())
-        query.exec("ROLLBACK;")
-        return
-
-    # Update bags
-    query.prepare("UPDATE Bags SET fid = ? WHERE pid = ? AND fid = ?")
-    query.addBindValue(new_flight_id)
-    query.addBindValue(passenger_id)
-    query.addBindValue(old_flight_id)
-    if not query.exec():
-        print("Error updating baggage details:", query.lastError().text())
-        query.exec("ROLLBACK;")
-        return
-
-    query.exec("COMMIT;")
-    print("Flight changed successfully")
-    
-
-def changeSeat(self, passenger_id, flight_id, new_seat_num):
+def changeSeat(passenger_id, flight_id, new_seat_num):
     query = QtSql.QSqlQuery()
     query.exec("BEGIN;")
 
@@ -289,17 +414,37 @@ def changeSeat(self, passenger_id, flight_id, new_seat_num):
     query.exec("COMMIT;")
     print("Seat changed successfully")
 
-def addBag(self, passenger_id, flight_id):
+def addBag(passenger_id, flight_id):
     query = QtSql.QSqlQuery()
     query.prepare("INSERT INTO Bags (pid, fid) VALUES (?, ?)")
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
         print("Error adding bag:", query.lastError().text())
+    else:
+        print(f"Added bag, {passenger_id=} {flight_id=}")
 
-def removeBag(self, bag_id):
+def removeBag(bag_id):
     query = QtSql.QSqlQuery()
     query.prepare("DELETE FROM Bags WHERE bid = ?")
     query.addBindValue(bag_id)
     if not query.exec():
         print("Error removing bag:", query.lastError().text())
+
+def getAvailableSeats(flight_id, current_seat=None):
+    query = QtSql.QSqlQuery()
+    query.prepare("SELECT seat_num FROM Bookings WHERE fid = ?")
+    query.addBindValue(flight_id)
+    if not query.exec_():
+        print("Error fetching booked seats:", query.lastError().text())
+        return []
+
+    bookedSeats = set()
+    while query.next():
+        bookedSeats.add(query.value(0))
+
+    totalSeats = set(range(1, 51))  # Assuming there are 50 seats
+    availableSeats = totalSeats - bookedSeats 
+    if current_seat:
+        availableSeats |= {current_seat}
+    return sorted(list(availableSeats))

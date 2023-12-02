@@ -1,4 +1,4 @@
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6 import QtCore, QtWidgets, QtGui, QtSql
 
 class UserTypeDialog(QtWidgets.QDialog):
     def __init__(self) -> None:
@@ -117,8 +117,21 @@ class SignInDialog(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def signInButtonClicked(self) -> None:
-        print("Check username/password here")
-        self.accept()
+        username = self.signInUsernameLineEdit.text()
+        password = self.signInPasswordLineEdit.text()
+
+        query = QtSql.QSqlQuery()
+        query.prepare("SELECT * FROM Passengers WHERE uname = :username AND pswd = :password")
+        query.bindValue(":username", username)
+        query.bindValue(":password", password)
+        query.exec_()
+
+        if query.next():
+            self.pid = query.value(0)
+            print("Login successful")
+            self.accept()
+        else:
+            print("Invalid username or password")
 
     @QtCore.Slot()
     def signUpButtonClicked(self) -> None:
@@ -127,7 +140,25 @@ class SignInDialog(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def createAccountButtonClicked(self) -> None:
-        print("Create account here")
-        print(self.lastNameLineEdit.text())
-        print(dir(self.lastNameLineEdit))
         self.accept()
+        fname = self.firstNameLineEdit.text()
+        lname = self.lastNameLineEdit.text()
+        dob = self.dobDateEdit.date().toString("yyyy-MM-dd")
+        uname = self.signUpUsernameLineEdit.text()
+        pswd = self.signUpPasswordLineEdit.text()
+
+        query = QtSql.QSqlQuery()
+        query.prepare("INSERT INTO Passengers (fname, lname, uname, pswd, dob) VALUES (:fname, :lname, :uname, :pswd, :dob)")
+        query.bindValue(":fname", fname)
+        query.bindValue(":lname", lname)
+        query.bindValue(":dob", dob)
+        query.bindValue(":uname", uname)
+        query.bindValue(":pswd", pswd)
+
+        if query.exec_():
+            if query.next():
+                self.pid = query.value(0)  # Assuming pid is the first column
+                print("Account created successfully with pid:", self.pid)
+                self.accept()
+        else:
+            print("Error creating account:", query.lastError().text())
