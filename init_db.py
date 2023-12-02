@@ -36,15 +36,6 @@ def initDatabase():
                 pswd VARCHAR(31) NOT NULL, \
                 dob DATE NOT NULL);")
 
-    # Copy passengers info into DB
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-    # csv_file_path = os.path.join(script_dir, "passengers.csv")
-
-    # copy_command = f"COPY Passengers(fname, lname, uname, pswd, dob) \
-    #                 FROM '{csv_file_path}' \
-    #                 DELIMITER ',' \
-    #                 CSV HEADER;"
-    # run_query(query, copy_command)
     copy_table(query, 'passengers.csv', 'Passengers')
 
     # Crew Table
@@ -54,22 +45,28 @@ def initDatabase():
                 lname VARCHAR(31) NOT NULL,\
                 dob DATE NOT NULL,\
                 position VARCHAR(31) NOT NULL);")
+    copy_table(query, 'crew.csv', 'Crew')
+
 
     # Airlines Table
     run_query(query, "CREATE TABLE Airlines(\
                 aid SERIAL PRIMARY KEY,\
                 name VARCHAR(31) NOT NULL);")
+    copy_table(query, 'airlines.csv', 'Airlines')
+    
 
     # Models Table
     run_query(query, "CREATE TABLE Models(\
                 model_name VARCHAR(31) PRIMARY KEY,\
                 capacity INT NOT NULL);")
+    copy_table(query, 'models.csv', 'Models')
 
     # Planes Table
     run_query(query, "CREATE TABLE Planes(\
                 plane_id SERIAL PRIMARY KEY,\
                 model_name VARCHAR(31) NOT NULL REFERENCES Models(model_name) ON UPDATE CASCADE ON DELETE CASCADE,\
                 aid INT REFERENCES Airlines(aid) ON UPDATE CASCADE ON DELETE SET NULL);")
+    copy_table(query, 'planes.csv', 'Planes')
 
     # Schedule Table
     run_query(query, "CREATE TABLE Schedule(\
@@ -80,12 +77,14 @@ def initDatabase():
                 arr_term VARCHAR(3) NOT NULL,\
                 arr_time TIMESTAMP NOT NULL,\
                 dest_airport VARCHAR(3) NOT NULL);")
+    copy_table(query, 'schedule.csv', 'Schedule')
 
     # Bags Table
     run_query(query, "CREATE TABLE Bags(\
                 bid SERIAL PRIMARY KEY,\
                 pid INT NOT NULL REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 fid INT NOT NULL REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
+    copy_table(query, 'bags.csv', 'Bags')
 
     # Bookings Table
     run_query(query, "CREATE TABLE Bookings(\
@@ -96,6 +95,7 @@ def initDatabase():
                 FOREIGN KEY (pid) REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 UNIQUE (fid, seat_num));")
+    copy_table(query, 'bookings.csv', 'Bookings')
 
     # CrewBookings Table
     run_query(query, "CREATE TABLE CrewBookings(\
@@ -104,6 +104,7 @@ def initDatabase():
                 PRIMARY KEY (cid, fid),\
                 FOREIGN KEY (cid) REFERENCES Crew(cid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
+    copy_table(query, 'crew_bookings.csv', 'CrewBookings')
 
 
     print("ALL QUERIES RAN SUCCESSFULLY.")
@@ -118,14 +119,20 @@ def run_query(query, query_text):
         print(f"FAILED TO RUN \n{query_text}\n\n")
         print(f"ERROR: {query.lastError()}")
         raise Exception("Database failure")
+            
+import codecs
+
+def remove_bom(s):
+    return s.lstrip(codecs.BOM_UTF8.decode('utf-8'))
 
 def copy_table(query, csv_file_path, table_name):
     with open(csv_file_path, newline='') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader)
-
+        # Can't figure out why these characters sometimes exist
+        # But this does fix it
+        headers = [remove_bom(header) for header in headers]
         insert_query = f"INSERT INTO {table_name} ({', '.join(headers)}) VALUES ({', '.join(['?'] * len(headers))})"
-
         for row in reader:
             query.prepare(insert_query)
             for i, value in enumerate(row):
@@ -134,23 +141,26 @@ def copy_table(query, csv_file_path, table_name):
                 print(f"Failed to insert row: {row}")
                 print(f"Error: {query.lastError().text()}")
                 break
-            
-            
+
 def view_database_info(db):
     table_query = QtSql.QSqlQuery(db)
     table_query.exec("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
 
-    print("Tables in the database:")
     while table_query.next():
         table_name = table_query.value(0)
-        print(table_name)
         print_table(db, table_name)
+        print("\n"+"-"*20+"\n")
 
 def print_table(db, table_name):
     table_query2 = QtSql.QSqlQuery(db)
 
     table_query2.exec(f"SELECT * FROM {table_name}")
-    # Iterate over the rows and print them
+    record = table_query2.record()
+
+    # Get column names
+    column_names = [record.fieldName(i) for i in range(record.count())]
+    print(f"TABLE: {table_name}")
+    print("Column Names:", column_names)
     while table_query2.next():
         row_values = [table_query2.value(i) for i in range(table_query2.record().count())]
         print(row_values)
