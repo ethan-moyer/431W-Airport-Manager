@@ -13,11 +13,11 @@ class AdminWindow(QtWidgets.QMainWindow):
         flightsTab = QtWidgets.QWidget()
         tabWidget.addTab(flightsTab, "Flights")
 
-        passengersTab = QtWidgets.QTabWidget()
-        tabWidget.addTab(passengersTab, "Passengers")
+        self.passengersTab = QtWidgets.QTabWidget()
+        tabWidget.addTab(self.passengersTab, "Passengers")
 
-        crewTab = QtWidgets.QTabWidget()
-        tabWidget.addTab(crewTab, "Crew")
+        self.crewTab = QtWidgets.QTabWidget()
+        tabWidget.addTab(self.crewTab, "Crew")
 
         # Flights tab
         flightsVLayout = QtWidgets.QVBoxLayout(flightsTab)
@@ -64,7 +64,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.flightsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.populateFlightsModel()
         flightsVLayout.addWidget(self.flightsView)
 
         flightsButtonLayout = QtWidgets.QHBoxLayout()
@@ -93,7 +92,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         # Passenger accounts tab
         passengerAccountsTab = QtWidgets.QWidget()
-        passengersTab.addTab(passengerAccountsTab, "Accounts")
+        self.passengersTab.addTab(passengerAccountsTab, "Accounts")
 
         paVLayout = QtWidgets.QVBoxLayout(passengerAccountsTab)
         paHLayout = QtWidgets.QHBoxLayout()
@@ -142,7 +141,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         # Passenger bookings tab
         passengerBookingsTab = QtWidgets.QWidget()
-        passengersTab.addTab(passengerBookingsTab, "Bookings")
+        self.passengersTab.addTab(passengerBookingsTab, "Bookings")
 
         pbVLayout = QtWidgets.QVBoxLayout(passengerBookingsTab)
         pbHLayout = QtWidgets.QHBoxLayout()
@@ -188,7 +187,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.pbView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.pbView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.pbView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.populatePBModel()
         pbVLayout.addWidget(self.pbView)
 
         pbButtonLayout = QtWidgets.QHBoxLayout()
@@ -205,7 +203,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         # Crew accounts tab
         crewAccountsTab = QtWidgets.QWidget()
-        crewTab.addTab(crewAccountsTab, "Accounts")
+        self.crewTab.addTab(crewAccountsTab, "Accounts")
 
         caVLayout = QtWidgets.QVBoxLayout(crewAccountsTab)
         caHLayout = QtWidgets.QHBoxLayout()
@@ -267,7 +265,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         # Crew bookings tab
         crewBookingsTab = QtWidgets.QWidget()
-        crewTab.addTab(crewBookingsTab, "Bookings")
+        self.crewTab.addTab(crewBookingsTab, "Bookings")
 
         cbVLayout = QtWidgets.QVBoxLayout(crewBookingsTab)
         cbHLayout = QtWidgets.QHBoxLayout()
@@ -313,7 +311,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.cbView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.cbView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.cbView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
-        self.populateCBModel()
         cbVLayout.addWidget(self.cbView)
 
         cbButtonLayout = QtWidgets.QHBoxLayout()
@@ -358,14 +355,40 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.caPositionEdit.textChanged.connect(self.populateCAModel)
         self.caDOBEdit.dateChanged.connect(self.populateCAModel)
 
+        #self.populateFlightsModel()
+        #self.populatePBModel()
+        #self.populatePAModel()
+        #self.populateCBModel()
+        #self.populateCAModel()
+
+        tabWidget.currentChanged.connect(self.onTabChanged)
+        self.passengersTab.currentChanged.connect(self.onPassengerTabChanged)
+        self.crewTab.currentChanged.connect(self.onCrewTabChanged)
+
         self.populateFlightsModel()
-        self.populatePBModel()
-        self.populatePAModel()
-        self.populateCBModel()
-        self.populateCAModel()
 
         self.resize(1120, 590)
 
+    def onTabChanged(self, index):
+        if index == 0:
+            self.populateFlightsModel()
+        elif index == 1:
+            self.onPassengerTabChanged(self.passengersTab.currentIndex())
+        else:
+            self.onCrewTabChanged(self.crewTab.currentIndex())
+
+    def onPassengerTabChanged(self, index):
+        if index == 0:
+            self.populatePAModel()
+        else:
+            self.populatePBModel()
+    
+    def onCrewTabChanged(self, index):
+        if index == 0:
+            self.populateCAModel()
+        else:
+            self.populateCBModel()
+    
     def populateFlightsModel(self):
         # query = QtSql.QSqlQuery()
         # queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name " \
@@ -1219,4 +1242,4 @@ def removeFlight(flight_id):
     query.prepare("DELETE FROM Schedule WHERE fid = ?")
     query.addBindValue(flight_id)
     if not query.exec():
-        QtWidgets.QMessageBox.critical(self, "Error", "Failed to remove flight: " + query.lastError().text())
+        QtWidgets.QMessageBox.critical(None, "Error", "Failed to remove flight: " + query.lastError().text())
