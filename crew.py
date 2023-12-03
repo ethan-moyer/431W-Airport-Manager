@@ -98,24 +98,81 @@ class CrewWindow(QtWidgets.QMainWindow):
 
         self.resize(1120, 590)
 
+        self.fromCheckBox.stateChanged.connect(self.updateFlightsView)
+        self.toCheckBox.stateChanged.connect(self.updateFlightsView)
+        self.airlineComboBox.currentIndexChanged.connect(self.updateFlightsView)
+        self.destinationLineEdit.textChanged.connect(self.updateFlightsView)
+        self.fromDateEdit.dateChanged.connect(self.updateFlightsView)
+        self.toDateEdit.dateChanged.connect(self.updateFlightsView)
+
+        self.populateAirlineComboBox()
         self.updateFlightsView()
         self.updateScheduleView()
 
-    def updateFlightsView(self):
+    def populateAirlineComboBox(self):
         query = QtSql.QSqlQuery()
-        query.prepare("SELECT * FROM Schedule")  # Adjust this query based on your database schema
+        query.exec("SELECT name FROM Airlines")
+        self.airlineComboBox.addItem("ANY")
+
+        while query.next():
+            self.airlineComboBox.addItem(query.value(0))
+
+    def updateFlightsView(self):
+        queryStr = "SELECT * FROM Schedule WHERE 1=1"
+        binding = {}
+
+        if self.fromCheckBox.isChecked():
+            fromDate = self.fromDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dep_time >= :fromDate"
+            binding[':fromDate'] = fromDate
+
+        if self.toCheckBox.isChecked():
+            toDate = self.toDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dep_time <= :toDate"
+            binding[":toDate"] = toDate
+
+        if self.airlineComboBox.currentText() != "ANY":
+            airline = self.airlineComboBox.currentText()
+            queryStr += " AND EXISTS (SELECT 1 FROM Planes p JOIN Airlines a ON p.aid = a.aid WHERE p.plane_id = Schedule.plane_id AND a.name = :airline)"
+            binding[":airline"] = airline
+
+        if self.destinationLineEdit.text():
+            destination = "%" + self.destinationLineEdit.text().strip() + "%"
+            queryStr += " AND dest_airport ILIKE :destination"
+            binding[":destination"] = destination
+
+        query = QtSql.QSqlQuery()
+        query.prepare(queryStr)
+
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
         query.exec_()
         self.flightsModel.setQuery(query)
         self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
+
     def updateScheduleView(self):
-        # Fetch and display crew's scheduled flights
+        queryStr = """
+        SELECT cb.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name
+        FROM CrewBookings cb
+        JOIN Schedule s ON cb.fid = s.fid
+        JOIN Planes p ON s.plane_id = p.plane_id
+        JOIN Airlines a ON p.aid = a.aid
+        WHERE cb.cid = :crew_id
+        ORDER BY s.dep_time
+        """
+
         query = QtSql.QSqlQuery()
-        query.prepare("SELECT * FROM CrewBookings WHERE cid = :cid")  # Adjust as needed
-        query.bindValue(":cid", self.crew_id)
-        query.exec_()
-        self.scheduleModel.setQuery(query)
-        self.scheduleModel.layoutChanged.emit()  # Notify the view that the layout has changed
+        query.prepare(queryStr)
+        query.bindValue(":crew_id", self.crew_id)
+
+        if not query.exec_():
+            print("Error updating schedule view:", query.lastError().text())
+        else:
+            self.scheduleModel.setQuery(query)
+            self.scheduleModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
 
 
     @QtCore.Slot()

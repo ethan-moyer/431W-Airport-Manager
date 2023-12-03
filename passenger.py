@@ -106,62 +106,74 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         self.updateFlightsView()
         self.updateBookingsView()
-        self.loadAirlinesIntoComboBox()
+        
+        self.populateAirlinesIntoComboBox()
 
     def updateFlightsView(self):
-        # Base query
-        queryStr = "SELECT * FROM Schedule WHERE 1=1"
-        params = {}
+        queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name " \
+                "FROM Schedule s " \
+                "JOIN Planes p ON s.plane_id = p.plane_id " \
+                "JOIN Airlines a ON p.aid = a.aid WHERE 1=1"
+        binding = {}
 
-        # Filter by airline if selected
-        airline = self.airlineComboBox.currentText()
-        if airline:
-            queryStr += " AND EXISTS (SELECT 1 FROM Planes p JOIN Airlines a ON p.aid = a.aid WHERE a.name = :airline AND p.plane_id = Schedule.plane_id)"
-            params[':airline'] = airline
-
-        # Filter by date range if checked
         if self.fromCheckBox.isChecked():
             fromDate = self.fromDateEdit.date().toString("yyyy-MM-dd")
-            queryStr += " AND dep_time >= :fromDate"
-            params[':fromDate'] = fromDate
+            queryStr += " AND s.dep_time >= :fromDate"
+            binding[':fromDate'] = fromDate
+
         if self.toCheckBox.isChecked():
             toDate = self.toDateEdit.date().toString("yyyy-MM-dd")
-            queryStr += " AND dep_time <= :toDate"
-            params[':toDate'] = toDate
+            queryStr += " AND s.dep_time <= :toDate"
+            binding[":toDate"] = toDate
 
-        # Filter by destination if entered
-        destination = self.destinationLineEdit.text().strip()
-        if destination:
-            queryStr += " AND dest_airport = :destination"
-            params[':destination'] = destination
+        if self.airlineComboBox.currentIndex() != 0:
+            airline = self.airlineComboBox.currentText()
+            queryStr += " AND a.name = :airline"
+            binding[":airline"] = airline
 
-        # Prepare and execute the query with bound parameters
+        if self.destinationLineEdit.text():
+            destination = "%" + self.destinationLineEdit.text().strip() + "%"
+            queryStr += " AND s.dest_airport ILIKE :destination"
+            binding[":destination"] = destination
+
         query = QtSql.QSqlQuery()
         query.prepare(queryStr)
-        for key, value in params.items():
-            query.bindValue(key, value)
-        query.exec_()
+        for name, value in binding.items():
+            query.bindValue(name, value)
 
-        # Set the query for the model
-        self.flightsModel.setQuery(query)
-        self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
-
-
+        if not query.exec_():
+            print("Error updating flights view:", query.lastError().text())
+        else:
+            self.flightsModel.setQuery(query)
+            self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
     def updateBookingsView(self):
-        queryStr = "SELECT * FROM Bookings WHERE pid = ?"
+        queryStr = """
+        SELECT b.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name, b.seat_num, COUNT(bg.bid) AS bags
+        FROM Bookings b
+        LEFT JOIN Schedule s ON b.fid = s.fid
+        LEFT JOIN Planes p ON s.plane_id = p.plane_id
+        LEFT JOIN Airlines a ON p.aid = a.aid
+        LEFT JOIN Bags bg ON b.pid = bg.pid AND b.fid = bg.fid
+        WHERE b.pid = :passenger_id
+        GROUP BY b.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name, b.seat_num
+        ORDER BY s.dep_time
+        """
+
         query = QtSql.QSqlQuery()
         query.prepare(queryStr)
-        query.addBindValue(self.passenger_id)
-        query.exec_()
+        query.bindValue(":passenger_id", self.passenger_id)
 
-        self.bookingsModel.setQuery(query)
-        self.bookingsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+        if not query.exec_():
+            print("Error updating bookings view:", query.lastError().text())
+        else:
+            self.bookingsModel.setQuery(query)
+            self.bookingsModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
 
-    def loadAirlinesIntoComboBox(self):
-        # Load airlines into the combobox
+    def populateAirlinesIntoComboBox(self):
         query = QtSql.QSqlQuery("SELECT name FROM Airlines")
+        self.airlineComboBox.addItem("ANY")
         while query.next():
             self.airlineComboBox.addItem(query.value(0))
 
@@ -190,15 +202,14 @@ class PassengerWindow(QtWidgets.QMainWindow):
             return
 
         bookingRecord = self.bookingsModel.record(selectedBookingIndex.row())
-        passenger_id = bookingRecord.value("pid")
         flight_id = bookingRecord.value("fid")
         old_seat_num = bookingRecord.value("seat_num")
         
-        modifyBookingDialog = ModifyBookingDialog(passenger_id, flight_id, old_seat_num)
+        modifyBookingDialog = ModifyBookingDialog(self.passenger_id, flight_id, old_seat_num)
         if modifyBookingDialog.exec():
             new_seat_num = modifyBookingDialog.seatNumComboBox.currentText()
             if str(new_seat_num) != str(old_seat_num):
-                changeSeat(passenger_id, flight_id, new_seat_num)
+                changeSeat(self.passenger_id, flight_id, new_seat_num)
         self.updateBookingsView()
     
     @QtCore.Slot()
@@ -209,9 +220,8 @@ class PassengerWindow(QtWidgets.QMainWindow):
             return
 
         bookingRecord = self.bookingsModel.record(selectedBookingIndex.row())
-        passenger_id = bookingRecord.value("pid")
         flight_id = bookingRecord.value("fid")
-        removeBooking(passenger_id, flight_id)
+        removeBooking(self.passenger_id, flight_id)
         self.updateBookingsView()
 
 class BookFlightDialog(QtWidgets.QDialog):

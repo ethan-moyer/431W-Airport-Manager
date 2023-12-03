@@ -115,7 +115,9 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.paDOBEdit = QtWidgets.QDateEdit(QtCore.QDate.currentDate())
         self.paDOBEdit.setMinimumWidth(100)
         paHLayout.addWidget(self.paDOBEdit)
-
+        self.paDOBCheckBox = QtWidgets.QCheckBox("Use DOB Filter")
+        paHLayout.addWidget(self.paDOBCheckBox)
+        
         paHLayout.addStretch()
 
         self.paModel = QtSql.QSqlQueryModel()
@@ -124,7 +126,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.paView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.paView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.populatePAModel()
         paVLayout.addWidget(self.paView)
 
         paButtonLayout = QtWidgets.QHBoxLayout()
@@ -220,6 +221,8 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.caDOBEdit = QtWidgets.QDateEdit(QtCore.QDate.currentDate())
         self.caDOBEdit.setMinimumWidth(100)
         caHLayout.addWidget(self.caDOBEdit)
+        self.caDOBCheckBox = QtWidgets.QCheckBox("Use DOB Filter")
+        caHLayout.addWidget(self.caDOBCheckBox)
 
         caHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
@@ -236,7 +239,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.caView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.caView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.populateCAModel()
         caVLayout.addWidget(self.caView)
 
         caButtonLayout = QtWidgets.QHBoxLayout()
@@ -308,31 +310,326 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         self.populateAirlineComboBoxes()
 
+        # LINK EDITS TO UPDATES
+        self.fromDateEdit.dateChanged.connect(self.populateFlightsModel)
+        self.toDateEdit.dateChanged.connect(self.populateFlightsModel)
+        self.airlineComboBox.currentIndexChanged.connect(self.populateFlightsModel)
+        self.destinationLineEdit.textChanged.connect(self.populateFlightsModel)
+        self.fromCheckBox.stateChanged.connect(self.populateFlightsModel)
+        self.toCheckBox.stateChanged.connect(self.populateFlightsModel)
+
+        self.pbFromDateEdit.dateChanged.connect(self.populatePBModel)
+        self.pbToDateEdit.dateChanged.connect(self.populatePBModel)
+        self.pbAirlineComboBox.currentIndexChanged.connect(self.populatePBModel)
+        self.pbDestinationLineEdit.textChanged.connect(self.populatePBModel)
+        self.pbFromCheckBox.stateChanged.connect(self.populatePBModel)
+        self.pbToCheckBox.stateChanged.connect(self.populatePBModel)
+
+        self.cbFromDateEdit.dateChanged.connect(self.populateCBModel)
+        self.cbToDateEdit.dateChanged.connect(self.populateCBModel)
+        self.cbAirlineComboBox.currentIndexChanged.connect(self.populateCBModel)
+        self.cbDestinationLineEdit.textChanged.connect(self.populateCBModel)
+        self.cbFromCheckBox.stateChanged.connect(self.populateCBModel)
+        self.cbToCheckBox.stateChanged.connect(self.populateCBModel)
+
+        self.paDOBCheckBox.stateChanged.connect(self.populatePAModel)
+        self.paFirstNameEdit.textChanged.connect(self.populatePAModel)
+        self.paLastNameEdit.textChanged.connect(self.populatePAModel)
+        self.paDOBEdit.dateChanged.connect(self.populatePAModel)
+
+        self.caDOBCheckBox.stateChanged.connect(self.populateCAModel)
+        self.caFirstNameEdit.textChanged.connect(self.populateCAModel)
+        self.caLastNameEdit.textChanged.connect(self.populateCAModel)
+        self.caPositionEdit.textChanged.connect(self.populateCAModel)
+        self.caDOBEdit.dateChanged.connect(self.populateCAModel)
+
+        self.populateFlightsModel()
+        self.populatePBModel()
+        self.populatePAModel()
+        self.populateCBModel()
+        self.populateCAModel()
+
         self.resize(1120, 590)
 
     def populateFlightsModel(self):
-        self.flightsModel.setQuery("SELECT * FROM Schedule")
+        # query = QtSql.QSqlQuery()
+        # queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name " \
+        #         "FROM Schedule s " \
+        #         "JOIN Planes p ON s.plane_id = p.plane_id " \
+        #         "JOIN Airlines a ON p.aid = a.aid " \
+        #         "WHERE (:fromDate IS NULL OR s.dep_time >= :fromDate) " \
+        #         "AND (:toDate IS NULL OR s.dep_time <= :toDate) " \
+        #         "AND (:airline IS NULL OR a.name = :airline) " \
+        #         "AND (:destination IS NULL OR s.dest_airport LIKE :destination)"
+        # query.prepare(queryStr)
+
+        # fromDate = self.fromDateEdit.date().toString("yyyy-MM-dd") if self.fromCheckBox.isChecked() else None
+        # toDate = self.toDateEdit.date().toString("yyyy-MM-dd") if self.toCheckBox.isChecked() else None
+        # airline = self.airlineComboBox.currentText() if self.airlineComboBox.currentIndex() != 0 else None
+        # destination = "%" + self.destinationLineEdit.text().strip() + "%" if self.destinationLineEdit.text() else None
+
+        # query.bindValue(":fromDate", fromDate)
+        # query.bindValue(":toDate", toDate)
+        # query.bindValue(":airline", airline)
+        # query.bindValue(":destination", destination)
+
+        # if not query.exec_():
+        #     print("Error retrieving flights:", query.lastError().text())
+        # else:
+        #     self.flightsModel.setQuery(query)
+
+        query = QtSql.QSqlQuery()
+        queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name " \
+                "FROM Schedule s " \
+                "JOIN Planes p ON s.plane_id = p.plane_id " \
+                "JOIN Airlines a ON p.aid = a.aid WHERE 1=1"
+        
+        binding = {}
+        
+        if self.fromCheckBox.isChecked():
+            fromDate = self.fromDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time >= :fromDate"
+            # query.bindValue(":fromDate", fromDate)
+            binding[':fromDate'] = fromDate
+
+        if self.toCheckBox.isChecked():
+            toDate = self.toDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time <= :toDate"
+            # query.bindValue(":toDate", toDate)
+            binding[":toDate"] = toDate
+
+        if self.airlineComboBox.currentIndex() != 0:
+            airline = self.airlineComboBox.currentText()
+            queryStr += " AND a.name = :airline"
+            # query.bindValue(":airline", airline.strip())
+            binding[":airline"] = airline
+
+        if self.destinationLineEdit.text():
+            destination = "%" + self.destinationLineEdit.text().strip() + "%"
+            queryStr += " AND s.dest_airport ILIKE :destination"
+            # query.bindValue(":destination", destination)
+            binding[":destination"] = destination
+            
+        query.prepare(queryStr)
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
+        if not query.exec_():
+            print("Error retrieving flights:", query.lastError().text())
+        else:
+            # print(f"Running: {query.lastQuery()}\n")
+            self.flightsModel.setQuery(query)
+            if self.flightsModel.lastError().isValid():
+                print("Model Error:", self.flightsModel.lastError().text())
 
     def populatePBModel(self):
-        self.pbModel.setQuery("SELECT * FROM Bookings")
+        # query = QtSql.QSqlQuery()
+        # queryStr = "SELECT b.pid, b.fid, b.seat_num, p.fname, p.lname, s.dep_time, s.arr_time, s.dest_airport " \
+        #         "FROM Bookings b " \
+        #         "JOIN Passengers p ON b.pid = p.pid " \
+        #         "JOIN Schedule s ON b.fid = s.fid " \
+        #         "WHERE (:fromDate IS NULL OR s.dep_time >= :fromDate) " \
+        #         "AND (:toDate IS NULL OR s.dep_time <= :toDate) " \
+        #         "AND (:airline IS NULL OR EXISTS (SELECT 1 FROM Planes pl JOIN Airlines a ON pl.aid = a.aid WHERE pl.plane_id = s.plane_id AND a.name = :airline)) " \
+        #         "AND (:destination IS NULL OR s.dest_airport LIKE :destination)"
+        # query.prepare(queryStr)
+
+        # fromDate = self.pbFromDateEdit.date().toString("yyyy-MM-dd") if self.pbFromCheckBox.isChecked() else None
+        # toDate = self.pbToDateEdit.date().toString("yyyy-MM-dd") if self.pbToCheckBox.isChecked() else None
+        # airline = self.pbAirlineComboBox.currentText() if self.pbAirlineComboBox.currentIndex() != 0 else None
+        # destination = "%" + self.pbDestinationLineEdit.text().strip() + "%" if self.pbDestinationLineEdit.text() else None
+
+        # query.bindValue(":fromDate", fromDate)
+        # query.bindValue(":toDate", toDate)
+        # query.bindValue(":airline", airline)
+        # query.bindValue(":destination", destination)
+
+        # if not query.exec_():
+        #     print("Error retrieving passenger bookings:", query.lastError().text())
+        # else:
+        #     self.pbModel.setQuery(query)
+        query = QtSql.QSqlQuery()
+        queryStr = "SELECT b.pid, b.fid, b.seat_num, p.fname, p.lname, s.dep_time, s.arr_time, s.dest_airport " \
+                "FROM Bookings b " \
+                "JOIN Passengers p ON b.pid = p.pid " \
+                "JOIN Schedule s ON b.fid = s.fid WHERE 1=1"
+
+        binding = {}
+
+        if self.pbFromCheckBox.isChecked():
+            fromDate = self.pbFromDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time >= :fromDate"
+            binding[':fromDate'] = fromDate
+
+        if self.pbToCheckBox.isChecked():
+            toDate = self.pbToDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time <= :toDate"
+            binding[":toDate"] = toDate
+
+        if self.pbAirlineComboBox.currentIndex() != 0:
+            airline = self.pbAirlineComboBox.currentText()
+            queryStr += " AND EXISTS (SELECT 1 FROM Planes pl JOIN Airlines a ON pl.aid = a.aid WHERE pl.plane_id = s.plane_id AND a.name = :airline)"
+            binding[":airline"] = airline
+
+        if self.pbDestinationLineEdit.text():
+            destination = "%" + self.pbDestinationLineEdit.text().strip() + "%"
+            queryStr += " AND s.dest_airport ILIKE :destination"
+            binding[":destination"] = destination
+
+        query.prepare(queryStr)
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
+        if not query.exec_():
+            print("Error retrieving passenger bookings:", query.lastError().text())
+        else:
+            self.pbModel.setQuery(query)
+            if self.pbModel.lastError().isValid():
+                print("Model Error:", self.pbModel.lastError().text())
 
     def populateCBModel(self):
-        self.cbModel.setQuery("SELECT * FROM CrewBookings")
+        # query = QtSql.QSqlQuery()
+        # queryStr = "SELECT cb.cid, cb.fid, c.fname, c.lname, c.position, s.dep_time, s.arr_time, s.dest_airport " \
+        #         "FROM CrewBookings cb " \
+        #         "JOIN Crew c ON cb.cid = c.cid " \
+        #         "JOIN Schedule s ON cb.fid = s.fid " \
+        #         "WHERE (:fromDate IS NULL OR s.dep_time >= :fromDate) " \
+        #         "AND (:toDate IS NULL OR s.dep_time <= :toDate) " \
+        #         "AND (:airline IS NULL OR EXISTS (SELECT 1 FROM Planes pl JOIN Airlines a ON pl.aid = a.aid WHERE pl.plane_id = s.plane_id AND a.name = :airline)) " \
+        #         "AND (:destination IS NULL OR s.dest_airport LIKE :destination)"
+        # query.prepare(queryStr)
+
+        # fromDate = self.cbFromDateEdit.date().toString("yyyy-MM-dd") if self.cbFromCheckBox.isChecked() else None
+        # toDate = self.cbToDateEdit.date().toString("yyyy-MM-dd") if self.cbToCheckBox.isChecked() else None
+        # airline = self.cbAirlineComboBox.currentText() if self.cbAirlineComboBox.currentIndex() != 0 else None
+        # destination = "%" + self.cbDestinationLineEdit.text().strip() + "%" if self.cbDestinationLineEdit.text() else None
+
+        # query.bindValue(":fromDate", fromDate)
+        # query.bindValue(":toDate", toDate)
+        # query.bindValue(":airline", airline)
+        # query.bindValue(":destination", destination)
+
+        # if not query.exec_():
+        #     print("Error retrieving crew bookings:", query.lastError().text())
+        # else:
+        #     self.cbModel.setQuery(query)
+        query = QtSql.QSqlQuery()
+        queryStr = "SELECT cb.cid, cb.fid, c.fname, c.lname, c.position, s.dep_time, s.arr_time, s.dest_airport " \
+                "FROM CrewBookings cb " \
+                "JOIN Crew c ON cb.cid = c.cid " \
+                "JOIN Schedule s ON cb.fid = s.fid WHERE 1=1"
+
+        binding = {}
+
+        if self.cbFromCheckBox.isChecked():
+            fromDate = self.cbFromDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time >= :fromDate"
+            binding[':fromDate'] = fromDate
+
+        if self.cbToCheckBox.isChecked():
+            toDate = self.cbToDateEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND s.dep_time <= :toDate"
+            binding[":toDate"] = toDate
+
+        if self.cbAirlineComboBox.currentIndex() != 0:
+            airline = self.cbAirlineComboBox.currentText()
+            queryStr += " AND EXISTS (SELECT 1 FROM Planes pl JOIN Airlines a ON pl.aid = a.aid WHERE pl.plane_id = s.plane_id AND a.name = :airline)"
+            binding[":airline"] = airline
+
+        if self.cbDestinationLineEdit.text():
+            destination = "%" + self.cbDestinationLineEdit.text().strip() + "%"
+            queryStr += " AND s.dest_airport ILIKE :destination"
+            binding[":destination"] = destination
+
+        query.prepare(queryStr)
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
+        if not query.exec_():
+            print("Error retrieving crew bookings:", query.lastError().text())
+        else:
+            self.cbModel.setQuery(query)
+            if self.cbModel.lastError().isValid():
+                print("Model Error:", self.cbModel.lastError().text())
+
 
     def populateAirlineComboBoxes(self):
         query = QtSql.QSqlQuery()
         query.exec("SELECT name FROM Airlines")
+        self.airlineComboBox.addItem("ANY")
+        self.pbAirlineComboBox.addItem("ANY")
+        self.cbAirlineComboBox.addItem("ANY")
+
         while query.next():
             self.airlineComboBox.addItem(query.value(0))
             self.pbAirlineComboBox.addItem(query.value(0))
             self.cbAirlineComboBox.addItem(query.value(0))
 
-
     def populatePAModel(self):
-        self.paModel.setQuery("SELECT * FROM Passengers")
+        query = QtSql.QSqlQuery()
+        queryStr = "SELECT pid, fname, lname, dob FROM Passengers WHERE 1=1"
+
+        binding = {}
+
+        if self.paFirstNameEdit.text():
+            firstName = self.paFirstNameEdit.text().strip()
+            queryStr += " AND fname ILIKE :firstName"
+            binding[":firstName"] = '%' + firstName + '%'
+
+        if self.paLastNameEdit.text():
+            lastName = self.paLastNameEdit.text().strip()
+            queryStr += " AND lname ILIKE :lastName"
+            binding[":lastName"] = '%' + lastName + '%'
+
+        if self.paDOBEdit.date().isValid() and self.paDOBCheckBox.isChecked():
+            dob = self.paDOBEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dob = :dob"
+            binding[":dob"] = dob
+
+        query.prepare(queryStr)
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
+        if not query.exec_():
+            print("Error retrieving passengers:", query.lastError().text())
+        else:
+            self.paModel.setQuery(query)
 
     def populateCAModel(self):
-        self.caModel.setQuery("SELECT * FROM Crew")
+        query = QtSql.QSqlQuery()
+        queryStr = "SELECT cid, fname, lname, dob, position FROM Crew WHERE 1=1"
+
+        binding = {}
+
+        if self.caFirstNameEdit.text():
+            firstName = self.caFirstNameEdit.text().strip()
+            queryStr += " AND fname ILIKE :firstName"
+            binding[":firstName"] = '%' + firstName + '%'
+
+        if self.caLastNameEdit.text():
+            lastName = self.caLastNameEdit.text().strip()
+            queryStr += " AND lname ILIKE :lastName"
+            binding[":lastName"] = '%' + lastName + '%'
+
+        if self.caDOBEdit.date().isValid() and self.caDOBCheckBox.isChecked():
+            dob = self.caDOBEdit.date().toString("yyyy-MM-dd")
+            queryStr += " AND dob = :dob"
+            binding[":dob"] = dob
+
+        if self.caPositionEdit.text():
+            position = self.caPositionEdit.text().strip()
+            queryStr += " AND position ILIKE :position"
+            binding[":position"] = '%' + position + '%'
+
+        query.prepare(queryStr)
+        for name, value in binding.items():
+            query.bindValue(name, value)
+
+        if not query.exec_():
+            print("Error retrieving crew:", query.lastError().text())
+        else:
+            self.caModel.setQuery(query)
+
 
     @QtCore.Slot()
     def openAddFlightDialog(self) -> None:
@@ -801,28 +1098,6 @@ def viewCrewSchedules(self):
     else:
         # NEED TO FIGURE OUT HOW TO DISPLAY
         self.crewSchedulesModel.setQuery(query)
-
-def addNewCrewMember(first_name, last_name, date_of_birth, role):
-    query = QtSql.QSqlQuery()
-    query.prepare("INSERT INTO Crew (fname, lname, dob, position) VALUES (?, ?, ?, ?)")
-    query.addBindValue(first_name)
-    query.addBindValue(last_name)
-    query.addBindValue(date_of_birth)
-    query.addBindValue(role)
-    if not query.exec():
-        print("Error adding new crew member:", query.lastError().text())
-
-def modifyCrewSchedule(crew_id, flight_id, add=True):
-    query = QtSql.QSqlQuery()
-    if add:
-        query.prepare("INSERT INTO CrewBookings (cid, fid) VALUES (?, ?)")
-    else:
-        query.prepare("DELETE FROM CrewBookings WHERE cid = ? AND fid = ?")
-    query.addBindValue(crew_id)
-    query.addBindValue(flight_id)
-    if not query.exec():
-        action = "adding" if add else "removing"
-        print(f"Error {action} crew member's schedule:", query.lastError().text())
 
 def getPassengersByAirlineAndDate(self, airline_name, date):
     query = QtSql.QSqlQuery()
