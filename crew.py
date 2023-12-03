@@ -1,8 +1,9 @@
 from PySide6 import QtCore, QtWidgets, QtSql
 
 class CrewWindow(QtWidgets.QMainWindow):
-    def __init__(self) -> None:
+    def __init__(self, crew_id) -> None:
         super().__init__()
+        self.crew_id = crew_id
 
         self.setWindowTitle("Airport Manager")
 
@@ -55,6 +56,9 @@ class CrewWindow(QtWidgets.QMainWindow):
         self.flightsModel = QtSql.QSqlQueryModel()
         self.flightsView = QtWidgets.QTableView()
         self.flightsView.setModel(self.flightsModel)
+        self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
         flightsVLayout.addWidget(self.flightsView)
 
         flightsButtonLayout = QtWidgets.QHBoxLayout()
@@ -75,6 +79,9 @@ class CrewWindow(QtWidgets.QMainWindow):
         self.scheduleModel = QtSql.QSqlQueryModel()
         self.scheduleView = QtWidgets.QTableView()
         self.scheduleView.setModel(self.scheduleModel)
+        self.scheduleView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.scheduleView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
         scheduleVLayout.addWidget(self.scheduleView)
 
         scheduleButtonLayout = QtWidgets.QHBoxLayout()
@@ -91,54 +98,159 @@ class CrewWindow(QtWidgets.QMainWindow):
 
         self.resize(1120, 590)
 
-    @QtCore.Slot()
-    def scheduleFlight(self) -> None:
-        print("Schedule flight here")
+        self.updateFlightsView()
+        self.updateScheduleView()
+
+    def updateFlightsView(self):
+        query = QtSql.QSqlQuery()
+        query.prepare("SELECT * FROM Schedule")  # Adjust this query based on your database schema
+        query.exec_()
+        self.flightsModel.setQuery(query)
+
+    def updateScheduleView(self):
+        # Fetch and display crew's scheduled flights
+        query = QtSql.QSqlQuery()
+        query.prepare("SELECT * FROM CrewBookings WHERE cid = :cid")  # Adjust as needed
+        query.bindValue(":cid", self.crew_id)
+        query.exec_()
+        self.scheduleModel.setQuery(query)
 
     @QtCore.Slot()
+    def scheduleFlight(self) -> None:
+        # print("Schedule flight here")
+        selectedFlightIndex = self.flightsView.currentIndex()
+        if selectedFlightIndex.isValid():
+            flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
+            addToFlightSchedule(self, self.crew_id, flight_id)
+            self.updateScheduleView()
+            self.updateFlightsView()
+            
+    @QtCore.Slot()
     def openDetailsDialog(self) -> None:
-        details = FlightDetailsDialog()
-        details.exec()
+        selectedFlightIndex = self.flightsView.currentIndex()
+        if selectedFlightIndex.isValid():
+            flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
+            details = FlightDetailsDialog(flight_id)
+            details.exec()
 
     @QtCore.Slot()
     def removeFromSchedule(self) -> None:
-        print("Remove flight here")
+        # print("Remove flight here")
+        selectedFlightIndex = self.scheduleView.currentIndex()
+        if selectedFlightIndex.isValid():
+            flight_id = self.scheduleModel.record(selectedFlightIndex.row()).value("fid")
+            removeFromFlightSchedule(self, self.crew_id, flight_id)
+            self.updateScheduleView()
+            self.updateFlightsView()
 
 class FlightDetailsDialog(QtWidgets.QDialog):
-    def __init__(self) -> None:
+    def __init__(self, flight_id) -> None:
         super().__init__()
+        self.flight_id = flight_id
 
         self.setWindowTitle("Airport Manager - Flight Details")
 
         self.layout = QtWidgets.QVBoxLayout(self)
         
-        self.layout.addWidget(QtWidgets.QLabel("Flight ID: "))
-        self.layout.addWidget(QtWidgets.QLabel("Airline: "))
-        self.layout.addWidget(QtWidgets.QLabel("Plane: "))
-        self.layout.addWidget(QtWidgets.QLabel("Terminal: "))
-        self.layout.addWidget(QtWidgets.QLabel("Departure Date: "))
-        self.layout.addWidget(QtWidgets.QLabel("Departure Time: "))
-        self.layout.addWidget(QtWidgets.QLabel("Arrival Time: "))
-        self.layout.addWidget(QtWidgets.QLabel("Destination: "))
+        # Flight Details Labels
+        self.flightIDLabel = QtWidgets.QLabel("Flight ID: ")
+        self.airlineLabel = QtWidgets.QLabel("Airline: ")
+        self.planeLabel = QtWidgets.QLabel("Plane: ")
+        self.departureTermLabel = QtWidgets.QLabel("Departure Terminal: ")
+        self.departureTimeLabel = QtWidgets.QLabel("Departure Time: ")
+        self.arrivalTermLabel = QtWidgets.QLabel("Arrival Terminal: ")
+        self.arrivalTimeLabel = QtWidgets.QLabel("Arrival Time: ")
+        self.destinationLabel = QtWidgets.QLabel("Destination: ")
+
+        self.layout.addWidget(self.flightIDLabel)
+        self.layout.addWidget(self.airlineLabel)
+        self.layout.addWidget(self.planeLabel)
+        self.layout.addWidget(self.departureTermLabel)
+        self.layout.addWidget(self.departureTimeLabel)
+        self.layout.addWidget(self.arrivalTermLabel)
+        self.layout.addWidget(self.arrivalTimeLabel)
+        self.layout.addWidget(self.destinationLabel)
         
         self.layout.addStretch()
 
         self.layout.addWidget(QtWidgets.QLabel("Passengers:"))
-        passengersModel = QtSql.QSqlQueryModel()
-        passengersView = QtWidgets.QTableView()
-        passengersView.setModel(passengersModel)
-        self.layout.addWidget(passengersView)
+        self.passengersModel = QtSql.QSqlQueryModel()
+        self.passengersView = QtWidgets.QTableView()
+        self.passengersView.setModel(self.passengersModel)
+        self.passengersView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.passengersView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
+        self.layout.addWidget(self.passengersView)
 
         self.layout.addStretch()
 
         self.layout.addWidget(QtWidgets.QLabel("Crew:"))
-        crewModel = QtSql.QSqlQueryModel()
-        crewView = QtWidgets.QTableView()
-        crewView.setModel(crewModel)
-        self.layout.addWidget(crewView)
+        self.crewModel = QtSql.QSqlQueryModel()
+        self.crewView = QtWidgets.QTableView()
+        self.crewView.setModel(self.crewModel)
+        self.crewView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.crewView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        
+        self.layout.addWidget(self.crewView)
 
         self.resize(450, 630)
+        viewFlightDetails(self, flight_id)
 
+        self.populateFlightDetails()
+
+    def populateFlightDetails(self):
+        # Fetch and display general flight details
+        self.populateGeneralFlightInfo()
+
+        # Populate passengers and crew information
+        self.populatePassengers()
+        self.populateCrew()
+
+    def populateGeneralFlightInfo(self):
+        query = QtSql.QSqlQuery()
+        query.prepare("""
+            SELECT S.fid, A.name AS airline, P.model_name, S.dep_term, S.dep_time, S.arr_term, S.arr_time, S.dest_airport
+            FROM Schedule S
+            JOIN Planes P ON S.plane_id = P.plane_id
+            JOIN Airlines A ON P.aid = A.aid
+            WHERE S.fid = :flight_id
+        """)
+        query.bindValue(":flight_id", self.flight_id)
+        if query.exec_() and query.next():
+            self.flightIDLabel.setText(f"Flight ID: {query.value(0)}")
+            self.airlineLabel.setText(f"Airline: {query.value(1)}")
+            self.planeLabel.setText(f"Plane: {query.value(2)}")
+            self.departureTermLabel.setText(f"Departure Terminal: {query.value(3)}")
+            self.departureTimeLabel.setText(f"Departure Time: {query.value(4)}")
+            self.arrivalTermLabel.setText(f"Arrival Terminal: {query.value(5)}")
+            self.arrivalTimeLabel.setText(f"Arrival Time: {query.value(6)}")
+            self.destinationLabel.setText(f"Destination: {query.value(7)}")
+        else:
+            print("Error fetching general flight details:", query.lastError().text())
+
+    def populatePassengers(self):
+        query = QtSql.QSqlQuery()
+        query.prepare("""
+            SELECT P.pid, P.fname || ' ' || P.lname AS name, B.seat_num 
+            FROM Passengers P 
+            JOIN Bookings B ON P.pid = B.pid 
+            WHERE B.fid = :flight_id
+        """)
+        query.bindValue(":flight_id", self.flight_id)
+        query.exec_()
+        self.passengersModel.setQuery(query)
+
+    def populateCrew(self):
+        query = QtSql.QSqlQuery()
+        query.prepare("""
+            SELECT C.cid, C.fname || ' ' || C.lname AS name, C.position 
+            FROM Crew C 
+            JOIN CrewBookings CB ON C.cid = CB.cid 
+            WHERE CB.fid = :flight_id
+        """)
+        query.bindValue(":flight_id", self.flight_id)
+        query.exec_()
+        self.crewModel.setQuery(query)
 
 def viewWorkSchedule(self, crew_id):
     query = QtSql.QSqlQuery()
@@ -156,15 +268,16 @@ def addToFlightSchedule(self, crew_id, flight_id):
     query.prepare("INSERT INTO CrewBookings (cid, fid) VALUES (?, ?)")
     query.addBindValue(crew_id)
     query.addBindValue(flight_id)
-    if not query.exec():
+    if not query.exec_():
         print("Error adding to flight schedule:", query.lastError().text())
+
 
 def removeFromFlightSchedule(self, crew_id, flight_id):
     query = QtSql.QSqlQuery()
     query.prepare("DELETE FROM CrewBookings WHERE cid = ? AND fid = ?")
     query.addBindValue(crew_id)
     query.addBindValue(flight_id)
-    if not query.exec():
+    if not query.exec_():
         print("Error removing from flight schedule:", query.lastError().text())
 
 def viewFlightDetails(self, flight_id):

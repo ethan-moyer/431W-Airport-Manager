@@ -55,13 +55,16 @@ if __name__ == "__main__":
         signInDialog = SignInDialog(mode)
 
         if signInDialog.exec() == 1:
-            user_pid = signInDialog.pid
-            print(f"user_pid is {user_pid}")
             if mode == 0:
+                user_pid = signInDialog.id
+                print(f"user_pid is {user_pid}")
+
                 passengerWindow = PassengerWindow(user_pid)
                 passengerWindow.show()
             elif mode == 1:
-                crewWindow = CrewWindow()
+                crew_pid = signInDialog.id
+                print(f"crew_pid is {crew_pid}")
+                crewWindow = CrewWindow(crew_pid)
                 crewWindow.show()
             else:
                 adminWindow = AdminWindow()
