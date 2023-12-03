@@ -448,6 +448,7 @@ class AdminWindow(QtWidgets.QMainWindow):
     def createCrew(self) -> None:
         dialog = CreateCrewDialog()
         dialog.exec()
+        self.populateCAModel()
 
     @QtCore.Slot()
     def deleteCrew(self) -> None:
