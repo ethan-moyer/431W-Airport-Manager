@@ -1,5 +1,5 @@
 from PySide6 import QtCore, QtWidgets, QtSql
-from passenger import ModifyBookingDialog, changeSeat, removeBooking, getAvailableSeats
+from passenger import ModifyBookingDialog, changeSeat, removeBooking, getAvailableSeats, addBooking
 
 class AdminWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
@@ -449,10 +449,16 @@ class AdminWindow(QtWidgets.QMainWindow):
         # else:
         #     self.pbModel.setQuery(query)
         query = QtSql.QSqlQuery()
-        queryStr = "SELECT b.pid, b.fid, b.seat_num, p.fname, p.lname, s.dep_time, s.arr_time, s.dest_airport " \
-                "FROM Bookings b " \
-                "JOIN Passengers p ON b.pid = p.pid " \
-                "JOIN Schedule s ON b.fid = s.fid WHERE 1=1"
+        # queryStr = "SELECT b.pid, b.fid, b.seat_num, p.fname, p.lname, s.dep_time, s.arr_time, s.dest_airport " \
+        #         "FROM Bookings b " \
+        #         "JOIN Passengers p ON b.pid = p.pid " \
+        #         "JOIN Schedule s ON b.fid = s.fid WHERE 1=1"
+        queryStr = """SELECT b.pid, b.fid, b.seat_num, p.fname, p.lname, s.dep_time, s.arr_time, s.dest_airport,
+                    (SELECT COUNT(*) FROM Bags WHERE Bags.pid = b.pid AND Bags.fid = b.fid) AS num_bags
+                    FROM Bookings b 
+                    JOIN Passengers p ON b.pid = p.pid 
+                    JOIN Schedule s ON b.fid = s.fid WHERE 1=1
+                    """
 
         binding = {}
 
@@ -690,8 +696,8 @@ class AdminWindow(QtWidgets.QMainWindow):
             pid = dialog.getSelectedPassengerId()
             seat_num = dialog.getSelectedSeatNumber()
 
-            addPassengerToFlight(pid, flight_id, seat_num)
-
+            num_bags = dialog.getSelectedNumberOfBags()
+            addBooking(pid, flight_id, seat_num, num_bags)
         self.populatePBModel()
 
 
@@ -958,7 +964,10 @@ class AddPassengerBookingDialog(QtWidgets.QDialog):
         return int(passengerId)
 
     def getSelectedSeatNumber(self):
-        return self.seatNumComboBox.currentText()
+        return int(self.seatNumComboBox.currentText())
+
+    def getSelectedNumberOfBags(self):
+        return int(self.bagNumComboBox.currentText())
 
 class CreateCrewDialog(QtWidgets.QDialog):
     def __init__(self) -> None:
@@ -1081,15 +1090,6 @@ def addCrewToFlight(crew_id, flight_id):
     query.addBindValue(flight_id)
     if not query.exec():
         print("Error adding crew to flight:", query.lastError().text())
-
-def addPassengerToFlight(passenger_id, flight_id, seat_num):
-    query = QtSql.QSqlQuery()
-    query.prepare("INSERT INTO Bookings (pid, fid, seat_num) VALUES (?, ?, ?)")
-    query.addBindValue(passenger_id)
-    query.addBindValue(flight_id)
-    query.addBindValue(seat_num)
-    if not query.exec():
-        print("Error adding passenger to flight:", query.lastError().text())
 
 def removePassengerFromFlight(passenger_id, flight_id):
     query = QtSql.QSqlQuery()
