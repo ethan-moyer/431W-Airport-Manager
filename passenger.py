@@ -463,9 +463,13 @@ def getAvailableSeats(flight_id, current_seat=None):
         print("Error fetching plane capacity:", query_capacity.lastError().text())
         return []
 
-    capacity = 50  # Default capacity
+    capacity = None
     if query_capacity.next():
         capacity = query_capacity.value(0)
+    
+    if capacity == None:
+        print("Couldn't get plane capacity")
+        return []
 
     # Query to get booked seats
     query_booked_seats = QtSql.QSqlQuery()
@@ -479,9 +483,8 @@ def getAvailableSeats(flight_id, current_seat=None):
     while query_booked_seats.next():
         bookedSeats.add(query_booked_seats.value(0))
 
-    totalSeats = set(range(1, capacity + 1))  # Now using dynamic capacity
+    totalSeats = set(range(1, capacity + 1))
     availableSeats = totalSeats - bookedSeats
     if current_seat:
-        availableSeats.add(current_seat)  # Use add instead of |= for a single item
-
-    return sorted(list(availableSeats))
+        availableSeats.add(current_seat)
+    return sorted(availableSeats)
