@@ -51,6 +51,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
+        self.destinationLineEdit.setMaxLength(3)
         self.destinationLineEdit.setFixedWidth(70)
         flightsHLayout.addWidget(self.destinationLineEdit)
 
@@ -169,6 +170,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         pbHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.pbDestinationLineEdit = QtWidgets.QLineEdit()
+        self.pbDestinationLineEdit.setMaxLength(3)
         self.pbDestinationLineEdit.setFixedWidth(70)
         pbHLayout.addWidget(self.pbDestinationLineEdit)
 
@@ -287,6 +289,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         cbHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.cbDestinationLineEdit = QtWidgets.QLineEdit()
+        self.cbDestinationLineEdit.setMaxLength(3)
         self.cbDestinationLineEdit.setFixedWidth(70)
         cbHLayout.addWidget(self.cbDestinationLineEdit)
 

@@ -48,6 +48,7 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
+        self.destinationLineEdit.setMaxLength(3)
         self.destinationLineEdit.setFixedWidth(70)
         flightsHLayout.addWidget(self.destinationLineEdit)
 
@@ -430,7 +431,6 @@ def removeBooking(passenger_id, flight_id):
 
 
 def changeSeat(passenger_id, flight_id, new_seat_num):
-    print(f"changing seat for {passenger_id} on {flight_id}")
     query = QtSql.QSqlQuery()
     query.exec("BEGIN;")
 
