@@ -443,19 +443,45 @@ def removeBag(bag_id):
         print("Error removing bag:", query.lastError().text())
 
 def getAvailableSeats(flight_id, current_seat=None):
-    query = QtSql.QSqlQuery()
-    query.prepare("SELECT seat_num FROM Bookings WHERE fid = ?")
-    query.addBindValue(flight_id)
-    if not query.exec_():
-        print("Error fetching booked seats:", query.lastError().text())
+    # Query to get the model of the plane for the given flight
+    query_plane_model = QtSql.QSqlQuery()
+    query_plane_model.prepare("SELECT model_name FROM Planes INNER JOIN Schedule ON Planes.plane_id = Schedule.plane_id WHERE fid = ?")
+    query_plane_model.addBindValue(flight_id)
+    if not query_plane_model.exec_():
+        print("Error fetching plane model:", query_plane_model.lastError().text())
+        return []
+
+    model_name = None
+    if query_plane_model.next():
+        model_name = query_plane_model.value(0)
+
+    # Query to get the capacity of the plane model
+    query_capacity = QtSql.QSqlQuery()
+    query_capacity.prepare("SELECT capacity FROM Models WHERE model_name = ?")
+    query_capacity.addBindValue(model_name)
+    if not query_capacity.exec_():
+        print("Error fetching plane capacity:", query_capacity.lastError().text())
+        return []
+
+    capacity = 50  # Default capacity
+    if query_capacity.next():
+        capacity = query_capacity.value(0)
+
+    # Query to get booked seats
+    query_booked_seats = QtSql.QSqlQuery()
+    query_booked_seats.prepare("SELECT seat_num FROM Bookings WHERE fid = ?")
+    query_booked_seats.addBindValue(flight_id)
+    if not query_booked_seats.exec_():
+        print("Error fetching booked seats:", query_booked_seats.lastError().text())
         return []
 
     bookedSeats = set()
-    while query.next():
-        bookedSeats.add(query.value(0))
+    while query_booked_seats.next():
+        bookedSeats.add(query_booked_seats.value(0))
 
-    totalSeats = set(range(1, 51))  # Assuming there are 50 seats
-    availableSeats = totalSeats - bookedSeats 
+    totalSeats = set(range(1, capacity + 1))  # Now using dynamic capacity
+    availableSeats = totalSeats - bookedSeats
     if current_seat:
-        availableSeats |= {current_seat}
+        availableSeats.add(current_seat)  # Use add instead of |= for a single item
+
     return sorted(list(availableSeats))
