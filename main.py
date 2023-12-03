@@ -46,7 +46,7 @@ if __name__ == "__main__":
         print(f"{QtSql.QSqlDatabase.drivers()=}")
         raise Exception("Couldn't load database")
 
-    view_database_info(db)
+    # view_database_info(db)
 
     userTypeDialog = UserTypeDialog()
 

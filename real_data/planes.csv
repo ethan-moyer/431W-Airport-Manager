@@ -1,0 +1,21 @@
+plane_id,model_name,aid
+1,Airbus A320,2
+2,Airbus A321,10
+3,Airbus A330,5
+4,Airbus A350,2
+5,Airbus A380,4
+6,Boeing 737,2
+7,Boeing 747,10
+8,Boeing 757,10
+9,Boeing 767,3
+10,Boeing 777,7
+11,Boeing 787,8
+12,Bombardier CRJ200,7
+13,Bombardier CRJ700,3
+14,Bombardier Q400,10
+15,Embraer E190,6
+16,Embraer E195,1
+17,McDonnell Douglas MD-80,8
+18,McDonnell Douglas MD-90,9
+19,Sukhoi Superjet 100,10
+20,ATR 72,2

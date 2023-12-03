@@ -36,7 +36,7 @@ def initDatabase():
                 pswd VARCHAR(31) NOT NULL, \
                 dob DATE NOT NULL);")
 
-    copy_table(query, 'passengers.csv', 'Passengers')
+    copy_table(query, 'passengers.csv', 'Passengers', 'pid')
 
     # Crew Table
     run_query(query, "CREATE TABLE Crew(\
@@ -47,28 +47,28 @@ def initDatabase():
                 pswd VARCHAR(31) NOT NULL, \
                 dob DATE NOT NULL,\
                 position VARCHAR(31) NOT NULL);")
-    copy_table(query, 'crew.csv', 'Crew')
+    copy_table(query, 'crew.csv', 'Crew', 'cid')
 
 
     # Airlines Table
     run_query(query, "CREATE TABLE Airlines(\
                 aid SERIAL PRIMARY KEY,\
                 name VARCHAR(31) NOT NULL);")
-    copy_table(query, 'airlines.csv', 'Airlines')
+    copy_table(query, 'airlines.csv', 'Airlines', 'aid')
     
 
     # Models Table
     run_query(query, "CREATE TABLE Models(\
                 model_name VARCHAR(31) PRIMARY KEY,\
                 capacity INT NOT NULL);")
-    copy_table(query, 'models.csv', 'Models')
+    copy_table(query, 'models.csv', 'Models', None)
 
     # Planes Table
     run_query(query, "CREATE TABLE Planes(\
                 plane_id SERIAL PRIMARY KEY,\
                 model_name VARCHAR(31) NOT NULL REFERENCES Models(model_name) ON UPDATE CASCADE ON DELETE CASCADE,\
                 aid INT REFERENCES Airlines(aid) ON UPDATE CASCADE ON DELETE SET NULL);")
-    copy_table(query, 'planes.csv', 'Planes')
+    copy_table(query, 'planes.csv', 'Planes', 'plane_id')
 
     # Schedule Table
     run_query(query, "CREATE TABLE Schedule(\
@@ -79,14 +79,14 @@ def initDatabase():
                 arr_term VARCHAR(3) NOT NULL,\
                 arr_time TIMESTAMP NOT NULL,\
                 dest_airport VARCHAR(3) NOT NULL);")
-    copy_table(query, 'schedule.csv', 'Schedule')
+    copy_table(query, 'schedule.csv', 'Schedule', 'fid')
 
     # Bags Table
     run_query(query, "CREATE TABLE Bags(\
                 bid SERIAL PRIMARY KEY,\
                 pid INT NOT NULL REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 fid INT NOT NULL REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
-    copy_table(query, 'bags.csv', 'Bags')
+    copy_table(query, 'bags.csv', 'Bags', 'bid')
 
     # Bookings Table
     run_query(query, "CREATE TABLE Bookings(\
@@ -97,7 +97,7 @@ def initDatabase():
                 FOREIGN KEY (pid) REFERENCES Passengers(pid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 UNIQUE (fid, seat_num));")
-    copy_table(query, 'bookings.csv', 'Bookings')
+    copy_table(query, 'bookings.csv', 'Bookings', None)
 
     # CrewBookings Table
     run_query(query, "CREATE TABLE CrewBookings(\
@@ -106,11 +106,11 @@ def initDatabase():
                 PRIMARY KEY (cid, fid),\
                 FOREIGN KEY (cid) REFERENCES Crew(cid) ON UPDATE RESTRICT ON DELETE CASCADE,\
                 FOREIGN KEY (fid) REFERENCES Schedule(fid) ON UPDATE RESTRICT ON DELETE CASCADE);")
-    copy_table(query, 'crew_bookings.csv', 'CrewBookings')
+    copy_table(query, 'crew_bookings.csv', 'CrewBookings', None)
 
 
     print("ALL QUERIES RAN SUCCESSFULLY.")
-    view_database_info(db)
+    # view_database_info(db)
 
     db.close()
     QtSql.QSqlDatabase.removeDatabase("airport_manager")
@@ -127,8 +127,20 @@ import codecs
 def remove_bom(s):
     return s.lstrip(codecs.BOM_UTF8.decode('utf-8'))
 
-def copy_table(query, csv_file_path, table_name):
-    with open(csv_file_path, newline='') as csvfile:
+def reset_serial_sequence(query, table_name, primary_key_column):
+    max_id_query = f"SELECT MAX({primary_key_column}) FROM {table_name}"
+    query.exec(max_id_query)
+    if query.next():
+        max_id = query.value(0) or 0  # Handle None case
+    else:
+        max_id = 0
+    reset_seq_query = f"SELECT setval('{table_name}_{primary_key_column}_seq', {max_id + 1}, false)"
+    if not query.exec(reset_seq_query):
+        print(f"Error resetting sequence for {table_name}: {query.lastError().text()}")
+
+
+def copy_table(query, csv_file_path, table_name, primary_key_column, real_data=True):
+    with open('real_data/'*real_data+csv_file_path, newline='') as csvfile:
         reader = csv.reader(csvfile)
         headers = next(reader)
         # Can't figure out why these characters sometimes exist
@@ -143,6 +155,9 @@ def copy_table(query, csv_file_path, table_name):
                 print(f"Failed to insert row: {row}")
                 print(f"Error: {query.lastError().text()}")
                 break
+    if primary_key_column:
+        reset_serial_sequence(query, table_name, primary_key_column)
+
 
 def view_database_info(db):
     table_query = QtSql.QSqlQuery(db)

@@ -1,0 +1,21 @@
+model_name,capacity
+Airbus A320,150
+Airbus A321,185
+Airbus A330,277
+Airbus A350,325
+Airbus A380,555
+Boeing 737,189
+Boeing 747,366
+Boeing 757,200
+Boeing 767,181
+Boeing 777,396
+Boeing 787,242
+Bombardier CRJ200,50
+Bombardier CRJ700,78
+Bombardier Q400,76
+Embraer E190,100
+Embraer E195,122
+McDonnell Douglas MD-80,172
+McDonnell Douglas MD-90,158
+Sukhoi Superjet 100,87
+ATR 72,74
