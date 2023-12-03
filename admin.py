@@ -848,16 +848,51 @@ class AddFlightDialog(QtWidgets.QDialog):
             self.addFlight()
 
     def addFlight(self):
-        query = QtSql.QSqlQuery()
-        query.prepare("INSERT INTO Schedule (plane_id, dep_term, dep_time, arr_term, arr_time, dest_airport) VALUES (?, ?, ?, ?, ?, ?)")
-        query.addBindValue(self.planeComboBox.currentText())
-        query.addBindValue(self.depTermLineEdit.text())
-        query.addBindValue(self.depDateTimeEdit.dateTime())
-        query.addBindValue(self.arrTermLineEdit.text())
-        query.addBindValue(self.arrDateTimeEdit.dateTime())
-        query.addBindValue(self.destLineEdit.text())
-        if not query.exec():
-            print("Error adding flight:", query.lastError().text())
+        plane_id = self.planeComboBox.currentText()
+        dep_time = self.depDateTimeEdit.dateTime()
+        arr_time = self.arrDateTimeEdit.dateTime()
+
+        conflict_query = QtSql.QSqlQuery()
+        
+        # Think this checks all potential overlaps but should double check
+        conflict_query.prepare("""
+            SELECT COUNT(*) FROM Schedule
+            WHERE plane_id = ? AND (
+                (dep_time BETWEEN ? AND ?) OR
+                (arr_time BETWEEN ? AND ?) OR
+                (? BETWEEN dep_time AND arr_time) OR
+                (? BETWEEN dep_time AND arr_time)
+            )
+        """)
+        conflict_query.addBindValue(plane_id)
+        conflict_query.addBindValue(dep_time)
+        conflict_query.addBindValue(arr_time)
+        conflict_query.addBindValue(dep_time)
+        conflict_query.addBindValue(arr_time)
+        conflict_query.addBindValue(dep_time)
+        conflict_query.addBindValue(arr_time)
+
+        if not conflict_query.exec_():
+            print("Error checking for scheduling conflicts:", conflict_query.lastError().text())
+            return
+
+        conflict_query.next()
+        if conflict_query.value(0) > 0:
+            print("Scheduling conflict detected.")
+            return
+
+        insert_query = QtSql.QSqlQuery()
+        insert_query.prepare("INSERT INTO Schedule (plane_id, dep_term, dep_time, arr_term, arr_time, dest_airport) VALUES (?, ?, ?, ?, ?, ?)")
+        insert_query.addBindValue(plane_id)
+        insert_query.addBindValue(self.depTermLineEdit.text())
+        insert_query.addBindValue(dep_time)
+        insert_query.addBindValue(self.arrTermLineEdit.text())
+        insert_query.addBindValue(arr_time)
+        insert_query.addBindValue(self.destLineEdit.text())
+        
+        if not insert_query.exec_():
+            print("Error adding flight:", insert_query.lastError().text())
+
 
     def modifyFlight(self):
         if self.flight_id is None:
