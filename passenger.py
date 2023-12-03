@@ -56,7 +56,10 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.flightsModel = QtSql.QSqlQueryModel()
         self.flightsView = QtWidgets.QTableView()
         self.flightsView.setModel(self.flightsModel)
-        
+
+        # Stretch table to fit window
+        self.flightsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
         # Select rows instead of cells
         self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -76,6 +79,9 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.bookingsModel = QtSql.QSqlQueryModel()
         self.bookingsView = QtWidgets.QTableView()
         self.bookingsView.setModel(self.bookingsModel)
+
+        #  Stretch table to fit window
+        self.bookingsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         # Select rows instead of cells
         self.bookingsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -147,6 +153,16 @@ class PassengerWindow(QtWidgets.QMainWindow):
             self.flightsModel.setQuery(query)
             self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
+        # Update the model column names
+        self.flightsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.flightsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.flightsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.flightsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.flightsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.flightsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.flightsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.flightsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
+
     def updateBookingsView(self):
         queryStr = """
         SELECT b.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name, b.seat_num, COUNT(bg.bid) AS bags
@@ -169,6 +185,18 @@ class PassengerWindow(QtWidgets.QMainWindow):
         else:
             self.bookingsModel.setQuery(query)
             self.bookingsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+        # Update the model column names
+        self.bookingsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.bookingsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.bookingsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.bookingsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.bookingsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.bookingsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.bookingsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.bookingsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
+        self.bookingsModel.setHeaderData(8, QtCore.Qt.Horizontal, "Seat Num")
+        self.bookingsModel.setHeaderData(9, QtCore.Qt.Horizontal, "Bags")
 
 
     def populateAirlinesIntoComboBox(self):
@@ -279,6 +307,9 @@ class ModifyBookingDialog(QtWidgets.QDialog):
         self.bagsView = QtWidgets.QTableView()
         self.bagsView.setModel(self.bagsModel)
 
+        #  Stretch table to fit window
+        self.bagsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
         # Select rows instead of cells
         self.bagsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.bagsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -322,6 +353,11 @@ class ModifyBookingDialog(QtWidgets.QDialog):
             self.addBagButton.setDisabled(True)
         else:
             self.addBagButton.setEnabled(True)
+
+        # Update the model column names
+        self.bagsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Bag ID")
+        self.bagsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Passenger ID")
+        self.bagsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Flight ID")
 
     def onAddBag(self):
         addBag(self.passenger_id, self.flight_id)
