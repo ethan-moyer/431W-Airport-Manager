@@ -153,6 +153,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.pbFromDateEdit.setMinimumWidth(100)
         pbHLayout.addWidget(self.pbFromDateEdit)
         self.pbFromCheckBox = QtWidgets.QCheckBox()
+        pbHLayout.addWidget(self.pbFromCheckBox)
 
         pbHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
@@ -277,6 +278,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.cbFromDateEdit.setMinimumWidth(100)
         cbHLayout.addWidget(self.cbFromDateEdit)
         self.cbFromCheckBox = QtWidgets.QCheckBox()
+        cbHLayout.addWidget(self.cbFromCheckBox)
 
         cbHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
