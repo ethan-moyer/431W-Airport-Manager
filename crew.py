@@ -106,6 +106,7 @@ class CrewWindow(QtWidgets.QMainWindow):
         query.prepare("SELECT * FROM Schedule")  # Adjust this query based on your database schema
         query.exec_()
         self.flightsModel.setQuery(query)
+        self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
     def updateScheduleView(self):
         # Fetch and display crew's scheduled flights
@@ -114,12 +115,15 @@ class CrewWindow(QtWidgets.QMainWindow):
         query.bindValue(":cid", self.crew_id)
         query.exec_()
         self.scheduleModel.setQuery(query)
+        self.scheduleModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
 
     @QtCore.Slot()
     def scheduleFlight(self) -> None:
         # print("Schedule flight here")
         selectedFlightIndex = self.flightsView.currentIndex()
         if selectedFlightIndex.isValid():
+            print("ADDING FLIGHT")
             flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
             addToFlightSchedule(self, self.crew_id, flight_id)
             self.updateScheduleView()
@@ -127,11 +131,21 @@ class CrewWindow(QtWidgets.QMainWindow):
             
     @QtCore.Slot()
     def openDetailsDialog(self) -> None:
-        selectedFlightIndex = self.flightsView.currentIndex()
+        currentTabIndex = self.centralWidget().currentIndex()  # Get the index of the current tab
+
+        if currentTabIndex == 0:  # Flights tab is active
+            correctView = self.flightsView
+            correctModel = self.flightsModel
+        else:
+            correctView = self.scheduleView
+            correctModel = self.scheduleModel
+
+        selectedFlightIndex = correctView.currentIndex()
         if selectedFlightIndex.isValid():
-            flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
+            flight_id = correctModel.record(selectedFlightIndex.row()).value("fid")
+            print("Opening details", flight_id)
             details = FlightDetailsDialog(flight_id)
-            details.exec()
+            print(details.exec())
 
     @QtCore.Slot()
     def removeFromSchedule(self) -> None:
@@ -194,7 +208,6 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         self.layout.addWidget(self.crewView)
 
         self.resize(450, 630)
-        viewFlightDetails(self, flight_id)
 
         self.populateFlightDetails()
 
@@ -252,16 +265,6 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         query.exec_()
         self.crewModel.setQuery(query)
 
-def viewWorkSchedule(self, crew_id):
-    query = QtSql.QSqlQuery()
-    query.prepare("""SELECT p.model_name, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport
-                     FROM CrewBookings c, Planes p, Schedule s
-                     WHERE c.fid = s.fid AND s.plane_id = p.plane_id AND c.cid = ?""")
-    query.addBindValue(crew_id)
-    if not query.exec():
-        print("Error viewing work schedule:", query.lastError().text())
-    else:
-        self.scheduleModel.setQuery(query)
 
 def addToFlightSchedule(self, crew_id, flight_id):
     query = QtSql.QSqlQuery()
@@ -279,20 +282,3 @@ def removeFromFlightSchedule(self, crew_id, flight_id):
     query.addBindValue(flight_id)
     if not query.exec_():
         print("Error removing from flight schedule:", query.lastError().text())
-
-def viewFlightDetails(self, flight_id):
-    query = QtSql.QSqlQuery()
-    query.prepare("""SELECT NULL AS seat_num, fname as first_name, lname as last_name
-                     FROM Crew WHERE cid IN 
-                     (SELECT cid FROM CrewBookings WHERE fid = ?)
-                     UNION ALL
-                     SELECT seat_num as seat_num, fname as first_name, lname as last_name
-                     FROM Passengers WHERE pid IN 
-                     (SELECT pid FROM Bookings WHERE fid = ?) 
-                     ORDER BY case when seat_num IS NULL then 0 else 1 end, seat_num;""")
-    query.addBindValue(flight_id)
-    query.addBindValue(flight_id)
-    if not query.exec():
-        print("Error viewing flight details:", query.lastError().text())
-    else:
-        self.detailsModel.setQuery(query)
