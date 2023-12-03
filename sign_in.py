@@ -121,13 +121,26 @@ class SignInDialog(QtWidgets.QDialog):
         password = self.signInPasswordLineEdit.text()
 
         query = QtSql.QSqlQuery()
-        query.prepare("SELECT * FROM Passengers WHERE uname = :username AND pswd = :password")
+        if self.mode == 2:
+            self.id=None
+            self.accept()
+            return
+        
+        if self.mode == 0:
+            print("Signing in as passenger")
+            query.prepare("SELECT * FROM Passengers WHERE uname = :username AND pswd = :password")
+        elif self.mode == 1:
+            print("Signing in as crew")
+            query.prepare("SELECT * FROM Crew WHERE uname = :username AND pswd = :password")
+
+            
         query.bindValue(":username", username)
         query.bindValue(":password", password)
         query.exec_()
 
+
         if query.next():
-            self.pid = query.value(0)
+            self.id = query.value(0)
             print("Login successful")
             self.accept()
         else:
@@ -157,8 +170,8 @@ class SignInDialog(QtWidgets.QDialog):
 
         if query.exec_():
             if query.next():
-                self.pid = query.value(0)  # Assuming pid is the first column
-                print("Account created successfully with pid:", self.pid)
+                self.id = query.value(0)  # Assuming pid/cid is the first column
+                print("Account created successfully with pid:", self.id)
                 self.accept()
         else:
             print("Error creating account:", query.lastError().text())

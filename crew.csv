@@ -1,4 +1,6 @@
-fname,lname,dob,position
-Michael,Turner,1985-05-15,Pilot
-Sarah,Miller,1988-08-20,Flight Attendant
-David,Lee,1979-11-30,Co-Pilot
+cid,fname,lname,uname,pswd,dob,position
+1,John,Doe,jdoe,password123,1980-05-15,Pilot
+2,Jane,Smith,jsmith,pass456,1985-07-20,Flight Attendant
+3,Robert,Brown,rbrown,password789,1978-09-10,Co-Pilot
+4,Lisa,White,lwhite,pass321,1990-03-22,Flight Engineer
+5,Mark,Green,mgreen,password123,1982-11-30,Flight Attendant

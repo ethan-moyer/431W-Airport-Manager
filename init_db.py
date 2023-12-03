@@ -43,6 +43,8 @@ def initDatabase():
                 cid SERIAL PRIMARY KEY,\
                 fname VARCHAR(31) NOT NULL,\
                 lname VARCHAR(31) NOT NULL,\
+                uname VARCHAR(31) UNIQUE NOT NULL, \
+                pswd VARCHAR(31) NOT NULL, \
                 dob DATE NOT NULL,\
                 position VARCHAR(31) NOT NULL);")
     copy_table(query, 'crew.csv', 'Crew')
