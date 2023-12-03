@@ -48,6 +48,7 @@ class PassengerWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
+        self.destinationLineEdit.setMaxLength(3)
         self.destinationLineEdit.setFixedWidth(70)
         flightsHLayout.addWidget(self.destinationLineEdit)
 
@@ -56,7 +57,10 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.flightsModel = QtSql.QSqlQueryModel()
         self.flightsView = QtWidgets.QTableView()
         self.flightsView.setModel(self.flightsModel)
-        
+
+        # Stretch table to fit window
+        self.flightsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
         # Select rows instead of cells
         self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -76,6 +80,9 @@ class PassengerWindow(QtWidgets.QMainWindow):
         self.bookingsModel = QtSql.QSqlQueryModel()
         self.bookingsView = QtWidgets.QTableView()
         self.bookingsView.setModel(self.bookingsModel)
+
+        #  Stretch table to fit window
+        self.bookingsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         # Select rows instead of cells
         self.bookingsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -142,10 +149,20 @@ class PassengerWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error updating flights view:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Updating Flights Error", f"Error updating flights view: {query.lastError().text()}")
         else:
             self.flightsModel.setQuery(query)
             self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+        # Update the model column names
+        self.flightsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.flightsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.flightsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.flightsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.flightsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.flightsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.flightsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.flightsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
 
     def updateBookingsView(self):
         queryStr = """
@@ -165,10 +182,22 @@ class PassengerWindow(QtWidgets.QMainWindow):
         query.bindValue(":passenger_id", self.passenger_id)
 
         if not query.exec_():
-            print("Error updating bookings view:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Update Bookings Error", f"Error updating bookings view: {query.lastError().text()}")
         else:
             self.bookingsModel.setQuery(query)
             self.bookingsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+        # Update the model column names
+        self.bookingsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.bookingsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.bookingsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.bookingsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.bookingsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.bookingsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.bookingsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.bookingsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
+        self.bookingsModel.setHeaderData(8, QtCore.Qt.Horizontal, "Seat Num")
+        self.bookingsModel.setHeaderData(9, QtCore.Qt.Horizontal, "Bags")
 
 
     def populateAirlinesIntoComboBox(self):
@@ -279,6 +308,9 @@ class ModifyBookingDialog(QtWidgets.QDialog):
         self.bagsView = QtWidgets.QTableView()
         self.bagsView.setModel(self.bagsModel)
 
+        #  Stretch table to fit window
+        self.bagsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+
         # Select rows instead of cells
         self.bagsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.bagsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -313,7 +345,7 @@ class ModifyBookingDialog(QtWidgets.QDialog):
         query.bindValue(":pid", self.passenger_id)
         query.bindValue(":fid", self.flight_id)
         if not query.exec_():
-            print("ERROR", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Update Bags Error", f"Error updating bags: {query.lastError().text()}")
             return
 
         self.bagsModel.setQuery(query)
@@ -322,6 +354,11 @@ class ModifyBookingDialog(QtWidgets.QDialog):
             self.addBagButton.setDisabled(True)
         else:
             self.addBagButton.setEnabled(True)
+
+        # Update the model column names
+        self.bagsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Bag ID")
+        self.bagsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Passenger ID")
+        self.bagsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Flight ID")
 
     def onAddBag(self):
         addBag(self.passenger_id, self.flight_id)
@@ -350,7 +387,7 @@ def addBooking(passenger_id, flight_id, seat_num, num_bags):
     query.addBindValue(flight_id)
     query.addBindValue(seat_num)
     if not query.exec():
-        print("Error adding booking:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Adding Booking Error", f"Error adding booking: {query.lastError().text()}")
         query.exec("ROLLBACK;")  # Rollback if error occurs
         return
 
@@ -360,7 +397,7 @@ def addBooking(passenger_id, flight_id, seat_num, num_bags):
         query.addBindValue(passenger_id)
         query.addBindValue(flight_id)
         if not query.exec():
-            print("Error adding bag:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(None, "Adding Bag Error", f"Error adding bag: {query.lastError().text()}")
             query.exec("ROLLBACK;")  # Rollback if error occurs
             return
 
@@ -376,7 +413,7 @@ def removeBooking(passenger_id, flight_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error removing bags:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Bag Error", f"Error removing bags: {query.lastError().text()}")
         query.exec("ROLLBACK;")  # Rollback if error occurs
         return
 
@@ -385,7 +422,7 @@ def removeBooking(passenger_id, flight_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error removing booking:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Booking Error", f"Error r emoving booking: {query.lastError().text()}")
         query.exec("ROLLBACK;")  # Rollback if error occurs
         return
 
@@ -394,7 +431,6 @@ def removeBooking(passenger_id, flight_id):
 
 
 def changeSeat(passenger_id, flight_id, new_seat_num):
-    print(f"changing seat for {passenger_id} on {flight_id}")
     query = QtSql.QSqlQuery()
     query.exec("BEGIN;")
 
@@ -403,12 +439,12 @@ def changeSeat(passenger_id, flight_id, new_seat_num):
     query.addBindValue(flight_id)
     query.addBindValue(new_seat_num)
     if not query.exec():
-        print("Error checking seat availability:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Availability Error", f"Error checking seat availability: {query.lastError().text()}")
         query.exec("ROLLBACK;")
         return
 
     if query.next():
-        print("Seat not available")
+        QtWidgets.QMessageBox.warning(None, "Availability Error", "Seat not available")
         query.exec("ROLLBACK;")
         return
 
@@ -418,7 +454,7 @@ def changeSeat(passenger_id, flight_id, new_seat_num):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error changing seat:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Changing Seat Error", f"Error changing seat: {query.lastError().text()}")
         query.exec("ROLLBACK;")
         return
 
@@ -431,7 +467,7 @@ def addBag(passenger_id, flight_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error adding bag:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Adding Bag Error", f"Error adding bag: {query.lastError().text()}")
     else:
         print(f"Added bag, {passenger_id=} {flight_id=}")
 
@@ -440,7 +476,7 @@ def removeBag(bag_id):
     query.prepare("DELETE FROM Bags WHERE bid = ?")
     query.addBindValue(bag_id)
     if not query.exec():
-        print("Error removing bag:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Bag Error", f"Error removing bag: {query.lastError().text()}")
 
 def getAvailableSeats(flight_id, current_seat=None):
     # Query to get the model of the plane for the given flight
@@ -448,7 +484,7 @@ def getAvailableSeats(flight_id, current_seat=None):
     query_plane_model.prepare("SELECT model_name FROM Planes INNER JOIN Schedule ON Planes.plane_id = Schedule.plane_id WHERE fid = ?")
     query_plane_model.addBindValue(flight_id)
     if not query_plane_model.exec_():
-        print("Error fetching plane model:", query_plane_model.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Fetching Model Error", f"Error fetching plane model: {query_plane_model.lastError().text()}")
         return []
 
     model_name = None
@@ -460,7 +496,7 @@ def getAvailableSeats(flight_id, current_seat=None):
     query_capacity.prepare("SELECT capacity FROM Models WHERE model_name = ?")
     query_capacity.addBindValue(model_name)
     if not query_capacity.exec_():
-        print("Error fetching plane capacity:", query_capacity.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Fetching Plane Error", f"Error fetching plane capacity: {query_capacity.lastError().text()}")
         return []
 
     capacity = None
@@ -468,7 +504,7 @@ def getAvailableSeats(flight_id, current_seat=None):
         capacity = query_capacity.value(0)
     
     if capacity == None:
-        print("Couldn't get plane capacity")
+        QtWidgets.QMessageBox.warning(None, "Fetching Plane Error", "Couldn't get plane capacity")
         return []
 
     # Query to get booked seats
@@ -476,7 +512,7 @@ def getAvailableSeats(flight_id, current_seat=None):
     query_booked_seats.prepare("SELECT seat_num FROM Bookings WHERE fid = ?")
     query_booked_seats.addBindValue(flight_id)
     if not query_booked_seats.exec_():
-        print("Error fetching booked seats:", query_booked_seats.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Fetching Seats Error", f"Error fetching booked seats:{query_booked_seats.lastError().text()}")
         return []
 
     bookedSeats = set()

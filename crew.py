@@ -48,6 +48,7 @@ class CrewWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
+        self.destinationLineEdit.setMaxLength(3)
         self.destinationLineEdit.setFixedWidth(70)
         flightsHLayout.addWidget(self.destinationLineEdit)
 
@@ -58,6 +59,7 @@ class CrewWindow(QtWidgets.QMainWindow):
         self.flightsView.setModel(self.flightsModel)
         self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.flightsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         flightsVLayout.addWidget(self.flightsView)
 
@@ -81,6 +83,7 @@ class CrewWindow(QtWidgets.QMainWindow):
         self.scheduleView.setModel(self.scheduleModel)
         self.scheduleView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.scheduleView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.scheduleView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         scheduleVLayout.addWidget(self.scheduleView)
 
@@ -118,7 +121,11 @@ class CrewWindow(QtWidgets.QMainWindow):
             self.airlineComboBox.addItem(query.value(0))
 
     def updateFlightsView(self):
-        queryStr = "SELECT * FROM Schedule WHERE 1=1"
+        queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name \
+            FROM Schedule s \
+            JOIN Planes p ON s.plane_id = p.plane_id \
+            JOIN Airlines a ON p.aid = a.aid \
+            WHERE 1=1"
         binding = {}
 
         if self.fromCheckBox.isChecked():
@@ -133,12 +140,12 @@ class CrewWindow(QtWidgets.QMainWindow):
 
         if self.airlineComboBox.currentText() != "ANY":
             airline = self.airlineComboBox.currentText()
-            queryStr += " AND EXISTS (SELECT 1 FROM Planes p JOIN Airlines a ON p.aid = a.aid WHERE p.plane_id = Schedule.plane_id AND a.name = :airline)"
+            queryStr += " AND a.name = :airline"
             binding[":airline"] = airline
 
         if self.destinationLineEdit.text():
             destination = "%" + self.destinationLineEdit.text().strip() + "%"
-            queryStr += " AND dest_airport ILIKE :destination"
+            queryStr += " AND s.dest_airport ILIKE :destination"
             binding[":destination"] = destination
 
         query = QtSql.QSqlQuery()
@@ -150,6 +157,16 @@ class CrewWindow(QtWidgets.QMainWindow):
         query.exec_()
         self.flightsModel.setQuery(query)
         self.flightsModel.layoutChanged.emit()  # Notify the view that the layout has changed
+
+        # Update the model column names
+        self.flightsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.flightsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.flightsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.flightsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.flightsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.flightsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.flightsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.flightsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
 
 
     def updateScheduleView(self):
@@ -173,6 +190,15 @@ class CrewWindow(QtWidgets.QMainWindow):
             self.scheduleModel.setQuery(query)
             self.scheduleModel.layoutChanged.emit()  # Notify the view that the layout has changed
 
+        # Update the model column names
+        self.scheduleModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.scheduleModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.scheduleModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.scheduleModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.scheduleModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.scheduleModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.scheduleModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane")
+        self.scheduleModel.setHeaderData(7, QtCore.Qt.Horizontal, "Airline")
 
 
     @QtCore.Slot()
@@ -180,7 +206,7 @@ class CrewWindow(QtWidgets.QMainWindow):
         # print("Schedule flight here")
         selectedFlightIndex = self.flightsView.currentIndex()
         if selectedFlightIndex.isValid():
-            print("ADDING FLIGHT")
+            #print("ADDING FLIGHT")
             flight_id = self.flightsModel.record(selectedFlightIndex.row()).value("fid")
             addToFlightSchedule(self, self.crew_id, flight_id)
             self.updateScheduleView()
@@ -200,9 +226,10 @@ class CrewWindow(QtWidgets.QMainWindow):
         selectedFlightIndex = correctView.currentIndex()
         if selectedFlightIndex.isValid():
             flight_id = correctModel.record(selectedFlightIndex.row()).value("fid")
-            print("Opening details", flight_id)
+            #print("Opening details", flight_id)
             details = FlightDetailsDialog(flight_id)
-            print(details.exec())
+            details.exec()
+            #print(details.exec())
 
     @QtCore.Slot()
     def removeFromSchedule(self) -> None:
@@ -250,6 +277,7 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         self.passengersView.setModel(self.passengersModel)
         self.passengersView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.passengersView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.passengersView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         self.layout.addWidget(self.passengersView)
 
@@ -261,6 +289,7 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         self.crewView.setModel(self.crewModel)
         self.crewView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.crewView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.crewView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         
         self.layout.addWidget(self.crewView)
 
@@ -291,12 +320,12 @@ class FlightDetailsDialog(QtWidgets.QDialog):
             self.airlineLabel.setText(f"Airline: {query.value(1)}")
             self.planeLabel.setText(f"Plane: {query.value(2)}")
             self.departureTermLabel.setText(f"Departure Terminal: {query.value(3)}")
-            self.departureTimeLabel.setText(f"Departure Time: {query.value(4)}")
+            self.departureTimeLabel.setText(f"Departure Time: {query.value(4).toString()}")
             self.arrivalTermLabel.setText(f"Arrival Terminal: {query.value(5)}")
-            self.arrivalTimeLabel.setText(f"Arrival Time: {query.value(6)}")
+            self.arrivalTimeLabel.setText(f"Arrival Time: {query.value(6).toString()}")
             self.destinationLabel.setText(f"Destination: {query.value(7)}")
         else:
-            print("Error fetching general flight details:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Fetching Flight Error", f"Error fetching general flight details: {query.lastError().text()}")
 
     def populatePassengers(self):
         query = QtSql.QSqlQuery()
@@ -310,6 +339,11 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         query.exec_()
         self.passengersModel.setQuery(query)
 
+        # Update the model column names
+        self.passengersModel.setHeaderData(0, QtCore.Qt.Horizontal, "Passenger ID")
+        self.passengersModel.setHeaderData(1, QtCore.Qt.Horizontal, "Name")
+        self.passengersModel.setHeaderData(2, QtCore.Qt.Horizontal, "Seat Num")
+
     def populateCrew(self):
         query = QtSql.QSqlQuery()
         query.prepare("""
@@ -322,6 +356,11 @@ class FlightDetailsDialog(QtWidgets.QDialog):
         query.exec_()
         self.crewModel.setQuery(query)
 
+        # Update the model column names
+        self.crewModel.setHeaderData(0, QtCore.Qt.Horizontal, "Crew ID")
+        self.crewModel.setHeaderData(1, QtCore.Qt.Horizontal, "Name")
+        self.crewModel.setHeaderData(2, QtCore.Qt.Horizontal, "Position")
+
 
 def addToFlightSchedule(self, crew_id, flight_id):
     query = QtSql.QSqlQuery()
@@ -329,7 +368,7 @@ def addToFlightSchedule(self, crew_id, flight_id):
     query.addBindValue(crew_id)
     query.addBindValue(flight_id)
     if not query.exec_():
-        print("Error adding to flight schedule:", query.lastError().text())
+        QtWidgets.QMessageBox(self, "Adding Flight Error", f"Error adding flight to schedule: {query.lastError().text()}")
 
 
 def removeFromFlightSchedule(self, crew_id, flight_id):
@@ -338,4 +377,4 @@ def removeFromFlightSchedule(self, crew_id, flight_id):
     query.addBindValue(crew_id)
     query.addBindValue(flight_id)
     if not query.exec_():
-        print("Error removing from flight schedule:", query.lastError().text())
+        QtWidgets.QMessageBox(self, "Removing Flight Error", f"Error removing flight from schedule: {query.lastError().text()}")

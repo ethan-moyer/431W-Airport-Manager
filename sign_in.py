@@ -52,6 +52,7 @@ class SignInDialog(QtWidgets.QDialog):
         super().__init__()
 
         self.mode = mode
+        self.id = None
 
         self.setWindowTitle("Airport Manager - Sign In")
 
@@ -73,9 +74,11 @@ class SignInDialog(QtWidgets.QDialog):
         signInLayout.addRow(signInLabel)
 
         self.signInUsernameLineEdit = QtWidgets.QLineEdit()
+        self.signInUsernameLineEdit.setMaxLength(31)
         signInLayout.addRow("Username:", self.signInUsernameLineEdit)
 
         self.signInPasswordLineEdit = QtWidgets.QLineEdit()
+        self.signInPasswordLineEdit.setMaxLength(31)
         self.signInPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         signInLayout.addRow("Password:", self.signInPasswordLineEdit)
 
@@ -94,18 +97,22 @@ class SignInDialog(QtWidgets.QDialog):
         signUpLayout.addRow(signUpLabel)
 
         self.firstNameLineEdit = QtWidgets.QLineEdit()
+        self.firstNameLineEdit.setMaxLength(31)
         signUpLayout.addRow("First Name:", self.firstNameLineEdit)
 
         self.lastNameLineEdit = QtWidgets.QLineEdit()
+        self.lastNameLineEdit.setMaxLength(31)
         signUpLayout.addRow("Last Name:", self.lastNameLineEdit)
 
         self.dobDateEdit = QtWidgets.QDateEdit()
         signUpLayout.addRow("Date of Birth:", self.dobDateEdit)
 
         self.signUpUsernameLineEdit = QtWidgets.QLineEdit()
+        self.signUpUsernameLineEdit.setMaxLength(31)
         signUpLayout.addRow("Username:", self.signUpUsernameLineEdit)
 
         self.signUpPasswordLineEdit = QtWidgets.QLineEdit()
+        self.signUpPasswordLineEdit.setMaxLength(31)
         self.signUpPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         signUpLayout.addRow("Password:", self.signUpPasswordLineEdit)
 
@@ -121,7 +128,7 @@ class SignInDialog(QtWidgets.QDialog):
         password = self.signInPasswordLineEdit.text()
 
         query = QtSql.QSqlQuery()
-        if self.mode == 2:
+        if self.mode == 2 and username == "admin" and password == "admin":
             self.id=None
             self.accept()
             return
@@ -144,7 +151,7 @@ class SignInDialog(QtWidgets.QDialog):
             print("Login successful")
             self.accept()
         else:
-            print("Invalid username or password")
+            QtWidgets.QMessageBox.warning(self, "Invalid Log In", "Invalid username and/or password")
 
     @QtCore.Slot()
     def signUpButtonClicked(self) -> None:
@@ -153,7 +160,6 @@ class SignInDialog(QtWidgets.QDialog):
 
     @QtCore.Slot()
     def createAccountButtonClicked(self) -> None:
-        self.accept()
         fname = self.firstNameLineEdit.text()
         lname = self.lastNameLineEdit.text()
         dob = self.dobDateEdit.date().toString("yyyy-MM-dd")
@@ -174,4 +180,4 @@ class SignInDialog(QtWidgets.QDialog):
                 print("Account created successfully with pid:", self.id)
                 self.accept()
         else:
-            print("Error creating account:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Creating Account Error", f"Error creating account {query.lastError().text()}")

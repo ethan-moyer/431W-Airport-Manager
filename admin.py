@@ -51,6 +51,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         flightsHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.destinationLineEdit = QtWidgets.QLineEdit()
+        self.destinationLineEdit.setMaxLength(3)
         self.destinationLineEdit.setFixedWidth(70)
         flightsHLayout.addWidget(self.destinationLineEdit)
 
@@ -62,6 +63,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.flightsView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.flightsView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.flightsView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.populateFlightsModel()
         flightsVLayout.addWidget(self.flightsView)
 
@@ -99,6 +101,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         paHLayout.addWidget(QtWidgets.QLabel("First Name:"))
         self.paFirstNameEdit = QtWidgets.QLineEdit()
+        self.paFirstNameEdit.setMaxLength(31)
         self.paFirstNameEdit.setMinimumWidth(150)
         paHLayout.addWidget(self.paFirstNameEdit)
 
@@ -106,6 +109,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         paHLayout.addWidget(QtWidgets.QLabel("Last Name:"))
         self.paLastNameEdit = QtWidgets.QLineEdit()
+        self.paLastNameEdit.setMaxLength(31)
         self.paLastNameEdit.setMinimumWidth(150)
         paHLayout.addWidget(self.paLastNameEdit)
 
@@ -126,6 +130,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.paView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.paView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.paView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         paVLayout.addWidget(self.paView)
 
         paButtonLayout = QtWidgets.QHBoxLayout()
@@ -148,6 +153,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.pbFromDateEdit.setMinimumWidth(100)
         pbHLayout.addWidget(self.pbFromDateEdit)
         self.pbFromCheckBox = QtWidgets.QCheckBox()
+        pbHLayout.addWidget(self.pbFromCheckBox)
 
         pbHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
@@ -169,6 +175,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         pbHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.pbDestinationLineEdit = QtWidgets.QLineEdit()
+        self.pbDestinationLineEdit.setMaxLength(3)
         self.pbDestinationLineEdit.setFixedWidth(70)
         pbHLayout.addWidget(self.pbDestinationLineEdit)
 
@@ -180,6 +187,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.pbView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.pbView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.pbView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.populatePBModel()
         pbVLayout.addWidget(self.pbView)
 
@@ -205,6 +213,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         caHLayout.addWidget(QtWidgets.QLabel("First Name:"))
         self.caFirstNameEdit = QtWidgets.QLineEdit()
+        self.caFirstNameEdit.setMaxLength(31)
         self.caFirstNameEdit.setMinimumWidth(150)
         caHLayout.addWidget(self.caFirstNameEdit)
 
@@ -212,6 +221,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         caHLayout.addWidget(QtWidgets.QLabel("Last Name:"))
         self.caLastNameEdit = QtWidgets.QLineEdit()
+        self.caLastNameEdit.setMaxLength(31)
         self.caLastNameEdit.setMinimumWidth(150)
         caHLayout.addWidget(self.caLastNameEdit)
 
@@ -228,6 +238,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         caHLayout.addWidget(QtWidgets.QLabel("Position:"))
         self.caPositionEdit = QtWidgets.QLineEdit()
+        self.caPositionEdit.setMaxLength(31)
         self.caPositionEdit.setMinimumWidth(150)
         caHLayout.addWidget(self.caPositionEdit)
 
@@ -239,6 +250,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.caView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.caView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.caView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         caVLayout.addWidget(self.caView)
 
         caButtonLayout = QtWidgets.QHBoxLayout()
@@ -266,6 +278,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.cbFromDateEdit.setMinimumWidth(100)
         cbHLayout.addWidget(self.cbFromDateEdit)
         self.cbFromCheckBox = QtWidgets.QCheckBox()
+        cbHLayout.addWidget(self.cbFromCheckBox)
 
         cbHLayout.addSpacerItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Preferred))
 
@@ -287,6 +300,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
         cbHLayout.addWidget(QtWidgets.QLabel("Destination:"))
         self.cbDestinationLineEdit = QtWidgets.QLineEdit()
+        self.cbDestinationLineEdit.setMaxLength(3)
         self.cbDestinationLineEdit.setFixedWidth(70)
         cbHLayout.addWidget(self.cbDestinationLineEdit)
 
@@ -298,6 +312,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         # Select rows instead of cells
         self.cbView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.cbView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.cbView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.populateCBModel()
         cbVLayout.addWidget(self.cbView)
 
@@ -379,7 +394,7 @@ class AdminWindow(QtWidgets.QMainWindow):
         #     self.flightsModel.setQuery(query)
 
         query = QtSql.QSqlQuery()
-        queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.model_name, a.name " \
+        queryStr = "SELECT s.fid, s.dep_term, s.dep_time, s.arr_term, s.arr_time, s.dest_airport, p.plane_id, p.model_name, a.name " \
                 "FROM Schedule s " \
                 "JOIN Planes p ON s.plane_id = p.plane_id " \
                 "JOIN Airlines a ON p.aid = a.aid WHERE 1=1"
@@ -415,12 +430,23 @@ class AdminWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error retrieving flights:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Retrieving Flights Error", f"Error retrieving flights: {query.lastError().text()}")
         else:
             # print(f"Running: {query.lastQuery()}\n")
             self.flightsModel.setQuery(query)
             if self.flightsModel.lastError().isValid():
-                print("Model Error:", self.flightsModel.lastError().text())
+                QtWidgets.QMessageBox.warning(self, "Model Error", f"Model error: {self.flightsModel.lastError().text()}")
+
+        # Update the model column names
+        self.flightsModel.setHeaderData(0, QtCore.Qt.Horizontal, "Flight ID")
+        self.flightsModel.setHeaderData(1, QtCore.Qt.Horizontal, "Dep. Terminal")
+        self.flightsModel.setHeaderData(2, QtCore.Qt.Horizontal, "Dep. Time")
+        self.flightsModel.setHeaderData(3, QtCore.Qt.Horizontal, "Arr. Terminal")
+        self.flightsModel.setHeaderData(4, QtCore.Qt.Horizontal, "Arr. Time")
+        self.flightsModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.flightsModel.setHeaderData(6, QtCore.Qt.Horizontal, "Plane ID")
+        self.flightsModel.setHeaderData(7, QtCore.Qt.Horizontal, "Model")
+        self.flightsModel.setHeaderData(8, QtCore.Qt.Horizontal, "Airline")
 
     def populatePBModel(self):
         # query = QtSql.QSqlQuery()
@@ -487,11 +513,22 @@ class AdminWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error retrieving passenger bookings:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Passenger Booking Error", f"Error retrieving passenger bookings: {query.lastError().text()}")
         else:
             self.pbModel.setQuery(query)
             if self.pbModel.lastError().isValid():
-                print("Model Error:", self.pbModel.lastError().text())
+                QtWidgets.QMessageBox.warning(self, "Model Error", f"Model error: {self.pbModel.lastError().text()}")
+
+        # Update the model column names
+        self.pbModel.setHeaderData(0, QtCore.Qt.Horizontal, "Passenger ID")
+        self.pbModel.setHeaderData(1, QtCore.Qt.Horizontal, "Flight ID")
+        self.pbModel.setHeaderData(2, QtCore.Qt.Horizontal, "Seat Num")
+        self.pbModel.setHeaderData(3, QtCore.Qt.Horizontal, "First Name")
+        self.pbModel.setHeaderData(4, QtCore.Qt.Horizontal, "Last Name")
+        self.pbModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dep. Time")
+        self.pbModel.setHeaderData(6, QtCore.Qt.Horizontal, "Arr. Time")
+        self.pbModel.setHeaderData(7, QtCore.Qt.Horizontal, "Dest. Airport")
+        self.pbModel.setHeaderData(8, QtCore.Qt.Horizontal, "Num Bags")
 
     def populateCBModel(self):
         # query = QtSql.QSqlQuery()
@@ -552,12 +589,21 @@ class AdminWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error retrieving crew bookings:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Retrieving Crew Bookings Error", f"Error retrieving crew bookings: {query.lastError().text()}")
         else:
             self.cbModel.setQuery(query)
             if self.cbModel.lastError().isValid():
-                print("Model Error:", self.cbModel.lastError().text())
+                QtWidgets.QMessageBox.warning(self, "Model Error", f"Model error: {self.cbModel.lastError().text()}")
 
+        # Update the model column names
+        self.cbModel.setHeaderData(0, QtCore.Qt.Horizontal, "Crew ID")
+        self.cbModel.setHeaderData(1, QtCore.Qt.Horizontal, "Flight ID")
+        self.cbModel.setHeaderData(2, QtCore.Qt.Horizontal, "First Name")
+        self.cbModel.setHeaderData(3, QtCore.Qt.Horizontal, "Last Name")
+        self.cbModel.setHeaderData(4, QtCore.Qt.Horizontal, "Position")
+        self.cbModel.setHeaderData(5, QtCore.Qt.Horizontal, "Dep. Time")
+        self.cbModel.setHeaderData(6, QtCore.Qt.Horizontal, "Arr. Time")
+        self.cbModel.setHeaderData(7, QtCore.Qt.Horizontal, "Dest. Airport")
 
     def populateAirlineComboBoxes(self):
         query = QtSql.QSqlQuery()
@@ -573,7 +619,7 @@ class AdminWindow(QtWidgets.QMainWindow):
 
     def populatePAModel(self):
         query = QtSql.QSqlQuery()
-        queryStr = "SELECT pid, fname, lname, dob FROM Passengers WHERE 1=1"
+        queryStr = "SELECT pid, uname, fname, lname, dob FROM Passengers WHERE 1=1"
 
         binding = {}
 
@@ -597,13 +643,20 @@ class AdminWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error retrieving passengers:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Retrieving Passengers Error", f"Error retrieving passengers: {query.lastError().text()}")
         else:
             self.paModel.setQuery(query)
 
+        # Update the model column names
+        self.paModel.setHeaderData(0, QtCore.Qt.Horizontal, "Passenger ID")
+        self.paModel.setHeaderData(1, QtCore.Qt.Horizontal, "Username")
+        self.paModel.setHeaderData(2, QtCore.Qt.Horizontal, "First Name")
+        self.paModel.setHeaderData(3, QtCore.Qt.Horizontal, "Last Name")
+        self.paModel.setHeaderData(4, QtCore.Qt.Horizontal, "DOB")
+
     def populateCAModel(self):
         query = QtSql.QSqlQuery()
-        queryStr = "SELECT cid, fname, lname, dob, position FROM Crew WHERE 1=1"
+        queryStr = "SELECT cid, uname, fname, lname, dob, position FROM Crew WHERE 1=1"
 
         binding = {}
 
@@ -632,9 +685,17 @@ class AdminWindow(QtWidgets.QMainWindow):
             query.bindValue(name, value)
 
         if not query.exec_():
-            print("Error retrieving crew:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Retrieving Crew Error", f"Error retrieving crew: {query.lastError().text()}")
         else:
             self.caModel.setQuery(query)
+
+        # Update the model column names
+        self.caModel.setHeaderData(0, QtCore.Qt.Horizontal, "Passenger ID")
+        self.caModel.setHeaderData(1, QtCore.Qt.Horizontal, "Username")
+        self.caModel.setHeaderData(2, QtCore.Qt.Horizontal, "First Name")
+        self.caModel.setHeaderData(3, QtCore.Qt.Horizontal, "Last Name")
+        self.caModel.setHeaderData(4, QtCore.Qt.Horizontal, "DOB")
+        self.caModel.setHeaderData(5, QtCore.Qt.Horizontal, "Position")
 
 
     @QtCore.Slot()
@@ -793,12 +854,14 @@ class AddFlightDialog(QtWidgets.QDialog):
         self.layout.addRow("Plane:", self.planeComboBox)
 
         self.depTermLineEdit = QtWidgets.QLineEdit()
+        self.depTermLineEdit.setMaxLength(3)
         self.layout.addRow("Departure Terminal:", self.depTermLineEdit)
 
         self.depDateTimeEdit = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
         self.layout.addRow("Departure Time:", self.depDateTimeEdit)
 
         self.arrTermLineEdit = QtWidgets.QLineEdit()
+        self.arrTermLineEdit.setMaxLength(3)
         self.layout.addRow("Arrival Terminal:", self.arrTermLineEdit)
 
         self.arrDateTimeEdit = QtWidgets.QDateTimeEdit(QtCore.QDateTime.currentDateTime())
@@ -845,7 +908,7 @@ class AddFlightDialog(QtWidgets.QDialog):
                 self.arrDateTimeEdit.setDateTime(query.value(5))
                 self.destLineEdit.setText(query.value(6))
             else:
-                print("Error loading flight data:", query.lastError().text())
+                QtWidgets.QMessageBox.warning(self, "Flight Data Error", f"Error loading flight data: {query.lastError().text()}")
 
     def submitFlight(self):
         if self.modifyingFlight:
@@ -879,12 +942,12 @@ class AddFlightDialog(QtWidgets.QDialog):
         conflict_query.addBindValue(arr_time)
 
         if not conflict_query.exec_():
-            print("Error checking for scheduling conflicts:", conflict_query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Scheduling Conflict Error", f"Error checking for scheduling conflicts: {conflict_query.lastError().text()}")
             return
 
         conflict_query.next()
         if conflict_query.value(0) > 0:
-            print("Scheduling conflict detected.")
+            QtWidgets.QMessageBox.warning(self, "Scheduling Conflict Error", "Scheduling conflict detected.")
             return
 
         insert_query = QtSql.QSqlQuery()
@@ -897,7 +960,7 @@ class AddFlightDialog(QtWidgets.QDialog):
         insert_query.addBindValue(self.destLineEdit.text())
         
         if not insert_query.exec_():
-            print("Error adding flight:", insert_query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Adding Flight Error", f"Error adding flight: {insert_query.lastError().text()}")
 
 
     def modifyFlight(self):
@@ -913,7 +976,7 @@ class AddFlightDialog(QtWidgets.QDialog):
         query.addBindValue(self.destLineEdit.text())
         query.addBindValue(self.flight_id)
         if not query.exec():
-            print("Error modifying flight:", query.lastError().text())
+            QtWidgets.QMessageBox.warning(self, "Modifying Flight Error", f"Error modifying flight: {query.lastError().text()}")
 
 
 class AddPassengerBookingDialog(QtWidgets.QDialog):
@@ -978,21 +1041,26 @@ class CreateCrewDialog(QtWidgets.QDialog):
         self.layout = QtWidgets.QFormLayout(self)
 
         self.firstNameLineEdit = QtWidgets.QLineEdit()
+        self.firstNameLineEdit.setMaxLength(31)
         self.layout.addRow("First Name:", self.firstNameLineEdit)
 
         self.lastNameLineEdit = QtWidgets.QLineEdit()
+        self.lastNameLineEdit.setMaxLength(31)
         self.layout.addRow("Last Name:", self.lastNameLineEdit)
 
         self.dobDateEdit = QtWidgets.QDateEdit()
         self.layout.addRow("Date of Birth:", self.dobDateEdit)
 
         self.positionEdit = QtWidgets.QLineEdit()
+        self.positionEdit.setMaxLength(31)
         self.layout.addRow("Position:", self.positionEdit)
 
         self.signUpUsernameLineEdit = QtWidgets.QLineEdit()
+        self.signUpUsernameLineEdit.setMaxLength(31)
         self.layout.addRow("Username:", self.signUpUsernameLineEdit)
 
         self.signUpPasswordLineEdit = QtWidgets.QLineEdit()
+        self.signUpPasswordLineEdit.setMaxLength(31)
         self.signUpPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
         self.layout.addRow("Password:", self.signUpPasswordLineEdit)
 
@@ -1023,7 +1091,7 @@ def createAccount(firstName, lastName, dob, position, username, password):
     query.addBindValue(password)
     
     if not query.exec():
-        print("Failed to create account:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Create Account Error", f"Failed to create account: {query.lastError().text()}")
     else:
         print(f"Created account successfully")
         
@@ -1064,14 +1132,14 @@ def deletePassengerAccount(pid):
     query.prepare("DELETE FROM Passengers WHERE pid = ?")
     query.addBindValue(pid)
     if not query.exec():
-        print("Error deleting passenger account:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Deleting Account Error", f"Error deleting passenger account: {query.lastError().text()}")
 
 def deleteCrew(cid):
     query = QtSql.QSqlQuery()
     query.prepare("DELETE FROM Crew WHERE cid = ?")
     query.addBindValue(cid)
     if not query.exec():
-        print("Error deleting crew account:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Deleting Account Error", f"Error deleting crew account: {query.lastError().text()}")
     else:
         print(f"deleted crew member {cid}")
 
@@ -1081,7 +1149,7 @@ def removeCrewBooking(cid, fid):
     query.addBindValue(cid)
     query.addBindValue(fid)
     if not query.exec():
-        print("Error removing Crew booking:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Booking Error", f"Error removing crew booking: {query.lastError().text()}")
 
 def addCrewToFlight(crew_id, flight_id):
     query = QtSql.QSqlQuery()
@@ -1089,7 +1157,7 @@ def addCrewToFlight(crew_id, flight_id):
     query.addBindValue(crew_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error adding crew to flight:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Adding Crew Error", f"Error adding crew to flight: {query.lastError().text()}")
 
 def removePassengerFromFlight(passenger_id, flight_id):
     query = QtSql.QSqlQuery()
@@ -1097,7 +1165,7 @@ def removePassengerFromFlight(passenger_id, flight_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error removing passenger from flight:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Passenger Error", f"Error removing passenger from flight: {query.lastError().text()}")
 
 def changeSeatOnFlight(passenger_id, flight_id, new_seat_id):
     query = QtSql.QSqlQuery()
@@ -1106,7 +1174,7 @@ def changeSeatOnFlight(passenger_id, flight_id, new_seat_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error changing seat:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Changing Seat Error", f"Error changing seat: {query.lastError().text()}")
 
 def addBag(passenger_id, flight_id):
     query = QtSql.QSqlQuery()
@@ -1114,14 +1182,14 @@ def addBag(passenger_id, flight_id):
     query.addBindValue(passenger_id)
     query.addBindValue(flight_id)
     if not query.exec():
-        print("Error adding bag:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Adding Bag Error", f"Error adding bag: {query.lastError().text()}")
 
 def removeBag(bag_id):
     query = QtSql.QSqlQuery()
     query.prepare("DELETE FROM Bags WHERE bid = ?")
     query.addBindValue(bag_id)
     if not query.exec():
-        print("Error removing bag:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(None, "Removing Bag Error", f"Error removing bag: {query.lastError().text()}")
 
 def viewCrewSchedules(self):
     query = QtSql.QSqlQuery()
@@ -1129,7 +1197,7 @@ def viewCrewSchedules(self):
                      FROM Crew c, CrewBookings cb, Schedule s, Plane p
                      WHERE c.cid = cb.cid AND cb.fid = s.fid AND s.plane_id = p.plane_id""")
     if not query.exec():
-        print("Error viewing crew schedules:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(self, "Viewing Schedule Error", f"Error viewing crew schedules: {query.lastError().text()}")
     else:
         # NEED TO FIGURE OUT HOW TO DISPLAY
         self.crewSchedulesModel.setQuery(query)
@@ -1142,7 +1210,7 @@ def getPassengersByAirlineAndDate(self, airline_name, date):
     query.addBindValue(airline_name)
     query.addBindValue(date)
     if not query.exec():
-        print("Error retrieving passengers:", query.lastError().text())
+        QtWidgets.QMessageBox.warning(self, "Retrieving Passengers Error", f"Error retrieving passengers: {query.lastError().text()}")
     else:
         self.passengersModel.setQuery(query)
         
