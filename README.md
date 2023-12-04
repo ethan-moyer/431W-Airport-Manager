@@ -1,9 +1,7 @@
-### Dependencies
+# Airport Manager
+Developed my Ethan Moyer and Ben Zydney for CMPSC 431W
 
-Python 3.12.0
+Developed using Python 3.12, PySide6, and PostgreSQL
 
-pip install pyside6
-
-Install mariadb locally. Get driver files https://github.com/thecodemonkey86/qt_mysql_driver/releases/tag/qmysql_6.6.0
-
-BEN:export DYLD_LIBRARY_PATH=/usr/local/Cellar/postgresql@15/15.5/lib:$DYLD_LIBRARY_PATH
+### User Manual
+[https://docs.google.com/document/d/1o_8wyN8Z42453pyoz-NFt5lyBVPpk8IFm-ageYo52Nk/edit](https://docs.google.com/document/d/1o_8wyN8Z42453pyoz-NFt5lyBVPpk8IFm-ageYo52Nk/edit)
