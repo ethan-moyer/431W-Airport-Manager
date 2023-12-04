@@ -178,6 +178,6 @@ class SignInDialog(QtWidgets.QDialog):
             if query.next():
                 self.id = query.value(0)  # Assuming pid/cid is the first column
                 print("Account created successfully with pid:", self.id)
-                self.accept()
+            self.accept()
         else:
             QtWidgets.QMessageBox.warning(self, "Creating Account Error", f"Error creating account {query.lastError().text()}")

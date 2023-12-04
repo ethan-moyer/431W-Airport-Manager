@@ -355,17 +355,17 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.caPositionEdit.textChanged.connect(self.populateCAModel)
         self.caDOBEdit.dateChanged.connect(self.populateCAModel)
 
-        #self.populateFlightsModel()
-        #self.populatePBModel()
-        #self.populatePAModel()
-        #self.populateCBModel()
-        #self.populateCAModel()
-
-        tabWidget.currentChanged.connect(self.onTabChanged)
-        self.passengersTab.currentChanged.connect(self.onPassengerTabChanged)
-        self.crewTab.currentChanged.connect(self.onCrewTabChanged)
-
         self.populateFlightsModel()
+        self.populatePBModel()
+        self.populatePAModel()
+        self.populateCBModel()
+        self.populateCAModel()
+
+        #tabWidget.currentChanged.connect(self.onTabChanged)
+        #self.passengersTab.currentChanged.connect(self.onPassengerTabChanged)
+        #self.crewTab.currentChanged.connect(self.onCrewTabChanged)
+
+        #self.populateFlightsModel()
 
         self.resize(1120, 590)
 
