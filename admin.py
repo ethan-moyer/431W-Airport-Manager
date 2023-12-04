@@ -90,6 +90,22 @@ class AdminWindow(QtWidgets.QMainWindow):
         self.removeFlightButton.clicked.connect(self.removeFlight)
         flightsButtonLayout.addWidget(self.removeFlightButton)
 
+        self.generateReportButton = QtWidgets.QPushButton("Generate Report")
+        self.generateReportButton.clicked.connect(self.generateReport)
+        flightsButtonLayout.addWidget(self.generateReportButton)
+
+        # Add a combo box for sorting options
+        self.sortingComboBox = QtWidgets.QComboBox()
+        self.sortingComboBox.addItem("Ascending")
+        self.sortingComboBox.addItem("Descending")
+        flightsHLayout.addWidget(QtWidgets.QLabel("Sort Order:"))
+        flightsHLayout.addWidget(self.sortingComboBox)
+
+        self.sortCriteriaComboBox = QtWidgets.QComboBox()
+        self.sortCriteriaComboBox.addItems(["Date", "Destination", "Number of Passengers", "Number of Crew", "Number of Bags"])
+        flightsHLayout.addWidget(QtWidgets.QLabel("Sort by:"))
+        flightsHLayout.addWidget(self.sortCriteriaComboBox)
+
         # Passenger accounts tab
         passengerAccountsTab = QtWidgets.QWidget()
         self.passengersTab.addTab(passengerAccountsTab, "Accounts")
@@ -364,8 +380,6 @@ class AdminWindow(QtWidgets.QMainWindow):
         #tabWidget.currentChanged.connect(self.onTabChanged)
         #self.passengersTab.currentChanged.connect(self.onPassengerTabChanged)
         #self.crewTab.currentChanged.connect(self.onCrewTabChanged)
-
-        #self.populateFlightsModel()
 
         self.resize(1120, 590)
 
@@ -860,7 +874,106 @@ class AdminWindow(QtWidgets.QMainWindow):
         flight_id = bookingRecord.value("fid")
         removeCrewBooking(crew_id, flight_id)
         self.populateCBModel()
-        
+
+    @QtCore.Slot()
+    def generateReport(self) -> None:
+        sort_by = self.sortCriteriaComboBox.currentText()
+        order = self.sortingComboBox.currentText()  # Assuming you have a sorting order combo box
+        self.generateAnalyticalReport(sort_by=sort_by, order=order)
+
+
+    def generateAnalyticalReport(self, sort_by='Date', order='Ascending') -> None:
+        query = QtSql.QSqlQuery()
+
+        queryStr = """
+        SELECT s.fid AS FlightID, s.dep_time AS DepartureTime, s.arr_time AS ArrivalTime, s.dest_airport AS Destination,
+            COUNT(DISTINCT b.pid) AS NumberOfPassengers, 
+            COUNT(DISTINCT cb.cid) AS NumberOfCrew,
+            COUNT(DISTINCT bag.bid) AS NumberOfBags
+        FROM Schedule s
+        LEFT JOIN Bookings b ON s.fid = b.fid
+        LEFT JOIN CrewBookings cb ON s.fid = cb.fid
+        LEFT JOIN Bags bag ON s.fid = bag.fid
+        GROUP BY s.fid
+        """
+
+        # Mapping user-friendly sort criteria to database column names or expressions
+        sort_criteria_mapping = {
+            'Date': 'DepartureTime',
+            'Destination': 'Destination',
+            'Number of Passengers': 'NumberOfPassengers',
+            'Number of Crew': 'NumberOfCrew',
+            'Number of Bags': 'NumberOfBags'
+        }
+
+        # Ensure the selected sort criterion is valid
+        sql_sort_by = sort_criteria_mapping.get(sort_by, 'DepartureTime')
+
+        # Modify the query string to include sorting
+        queryStr += f" ORDER BY {sql_sort_by} "
+        queryStr += "ASC" if order == 'Ascending' else "DESC"
+
+        # Execute the query
+        query.exec(queryStr)
+
+        if query.isActive():
+            # Process the query results
+            report_data = []
+            while query.next():
+                formatted_departure_time = query.value(1).toString("yyyy-MM-dd hh:mm:ss")
+                formatted_arrival_time = query.value(2).toString("yyyy-MM-dd hh:mm:ss")
+
+                report_data.append({
+                    'FlightID': query.value(0),
+                    'DepartureTime': formatted_departure_time,
+                    'ArrivalTime': formatted_arrival_time,
+                    'Destination': query.value(3),
+                    'NumberOfPassengers': query.value(4),
+                    'NumberOfCrew': query.value(5),
+                    'NumberOfBags': query.value(6)
+                })
+            
+            # Format and display the report data
+            self.displayReport(report_data)
+        else:
+            print("Error generating report:", query.lastError().text())
+
+
+    def displayReport(self, report_data):
+        # Format the report as a string
+        report_str = "Airline Management System Analytical Report\n"
+        report_str += "--------------------------------------------------\n"
+        if not report_data:
+            return
+        report_str += "{:<15} {:<25} {:<25} {:<15} {:<15} {:<15} {:<15}\n".format(*report_data[0].keys())
+
+        for data in report_data:
+            
+            report_str += "{:<15} {:<25} {:<25} {:<15} {:<15} {:<15} {:<15}\n".format(
+                data['FlightID'],
+                data['DepartureTime'],
+                data['ArrivalTime'],
+                data['Destination'],
+                data['NumberOfPassengers'],
+                data['NumberOfCrew'],
+                data['NumberOfBags'],
+            )
+
+        # Ask the user for a file location to save the report
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        fileName, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Report", QtCore.QDir.currentPath(),
+                        "Text Files (*.txt);;All Files (*)", options=options)
+        if fileName:
+            try:
+                with open(fileName, 'w') as file:
+                    file.write(report_str)
+                QtWidgets.QMessageBox.information(self, "Report Saved", f"Report successfully saved to {fileName}")
+            except IOError as e:
+                QtWidgets.QMessageBox.warning(self, "Saving Error", f"Failed to save report: {e}")
+
+
+
 class AddFlightDialog(QtWidgets.QDialog):
     def __init__(self, modifyingFlight, flight_id=None) -> None:
         super().__init__()

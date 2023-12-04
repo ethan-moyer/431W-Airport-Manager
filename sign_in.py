@@ -173,11 +173,14 @@ class SignInDialog(QtWidgets.QDialog):
         query.bindValue(":dob", dob)
         query.bindValue(":uname", uname)
         query.bindValue(":pswd", pswd)
-
-        if query.exec_():
-            if query.next():
-                self.id = query.value(0)  # Assuming pid/cid is the first column
-                print("Account created successfully with pid:", self.id)
-            self.accept()
+        
+        if query.exec_() == False:
+             QtWidgets.QMessageBox.warning(self, "Creating Account Error", f"Error creating account {query.lastError().text()}")
         else:
-            QtWidgets.QMessageBox.warning(self, "Creating Account Error", f"Error creating account {query.lastError().text()}")
+            query.prepare("SELECT pid FROM Passengers WHERE uname=:uname")
+            query.bindValue(":uname", uname)
+            if query.exec_():
+                if query.next():
+                    self.id = query.value(0)  # Assuming pid/cid is the first column
+                    print("Account created successfully with pid:", self.id)
+                self.accept()
